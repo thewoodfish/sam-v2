@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, minimum-scale=1,initial-scale=1">
+	<script src= "https://code.jquery.com/jquery-3.3.1.min.js"></script>
+	<script src="https://unpkg.com/jquery.terminal/js/jquery.terminal.min.js"></script>
+	<link rel="stylesheet" href="https://unpkg.com/jquery.terminal/css/jquery.terminal.min.css" />
+	<style type="text/css">
+		.terminal,
+		span {
+			--size: 1.0;
+		}
+
+		.cmd, .cmd div, .cmd span[data-text]:not(.cmd-inverted):not(.token):not(.emoji), .terminal, .terminal-output>:not(.raw) a, .terminal-output>:not(.raw) div, .terminal-output>:not(.raw) span[data-text]:not(.token):not(.inverted):not(.terminal-inverted):not(.cmd-inverted):not(.terminal-error):not(.emoji), .terminal.external [data-text] {
+			background-color: #fff;
+			color: var(--color,#aaa);
+		}
+
+	</style>
+</head>
+
+<body>
+	<template id="greetings">
+																Samaritan: A Digital Identity Solution. 0.0.1
+															To begin, enter "start"; For help, enter "help"
+																																
+	   </template>
+
+	   <script>
+		jQuery(function($, undefined) {
+            var main = $('body').terminal({
+				start: function() {
+					this.push(function(data) {
+						if (data) {
+							this.echo("Verifying existence onchain...");
+							this.pause();
+
+							fetch ("/verify", {
+								method: 'post',
+								headers: {
+									'Content-Type': 'application/json'
+								},
+								body: JSON.stringify({
+									'id': data,
+								})
+							})
+							.then(res => {
+								(async function () {
+									await res.json().then(res => {
+										
+									});
+								})();  
+							})
+						}
+					}, {
+						prompt: 'Please enter your DID or pseudo-name: ',
+						onPop: function(before, after) {
+							this.pop();
+						},
+					});
+				},
+
+			}, {
+				greetings: function () {
+					return greetings.innerHTML
+				}, 
+                name: 'Samaritan',
+				historySize: 10,
+                prompt: '[[b;green;]>>> ]',
+				onInit: function() {
+					
+				}
+			});
+		});
+	   </script>
+</body>
+
+</html>
