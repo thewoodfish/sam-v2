@@ -2,7 +2,7 @@
   "name": "samaritan",
   "version": "1.0.0",
   "description": "A digital identity solution - Beta",
-  "main": "index.js",
+  "main": "index.cjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemom app.js"
@@ -24,5 +24,6 @@
   },
   "devDependencies": {
     "nodemon": "^2.0.19"
-  }
+  },
+  "type": "module"
 }
