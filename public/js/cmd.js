@@ -61,7 +61,7 @@
 										// if name is/isn't recognized
 										if (JSON.parse(res.data)[1]) {
 											main.resume();
-											main.echo(`[[b;blue;]"${data}"] has been used by someone. Kindly select another name :)`);
+											main.echo(`The name [[b;blue;]"${data}"] has been taken by someone else. Kindly select another name :)`);
 										} else {
 											// attempt to create samaritan
 											main.echo("Creating your Samaritan...");
@@ -70,7 +70,9 @@
 												headers: {
 													'Content-Type': 'application/json'
 												},
-												body: JSON.stringify({})
+												body: JSON.stringify({
+													"name": data
+												})
 											})
 											.then(res => {
 												(async function () {
@@ -91,7 +93,6 @@
 						},
 					});
 				},
-
 
 			}, {
 				greetings: function () {

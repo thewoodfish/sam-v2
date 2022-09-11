@@ -51,8 +51,11 @@ async function verifyExistence(req, res) {
             });
         } 
     });
+}
 
-    // console.log(hash);
+// add new Samaritan to chain
+async function createSamaritan(req, res) {
+
 }
 
  
@@ -63,6 +66,11 @@ app.get('', (req, res) => {
 // check if the DID or pseudoname exists onchain
 app.post('/verify', (req, res) => {
     verifyExistence(req.body, res);
+})
+
+// create Samaritan
+app.post('/create', (req, res) => {
+    createSamaritan(req.body, res);
 })
 
 
