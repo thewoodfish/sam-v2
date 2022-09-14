@@ -1,7 +1,7 @@
 
 let createDIDoc = (did) => {
     let json = {
-        "@context": "https://www.w3.org/ns/did/v1",
+        "@context": ["https://www.w3.org/ns/did/v1"],
         "id": did
     }
 

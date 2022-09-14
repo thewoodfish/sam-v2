@@ -111,16 +111,16 @@ async function readDocument(req, res) {
             events.forEach(({ event: { data, method, section }, phase }) => {
                 if (section.match("samaritan", "i")) {
                     // let cid = data[1]; // IPFS CID
-                    console.log(data.toString());
-                    // (async function () {
-                    //     // read document from IPFS
-                    //     await net.getFromIPFS(cid).then(bytes => {
-                    //         res.send({ data: util.Utf8ArrayToStr(bytes) });
-                    //     });
-                    // }())
+                    let cid = data.toHuman()[1];
+                    (async function () {
+                        // read document from IPFS
+                        await net.getFromIPFS(cid).then(bytes => {
+                            res.send({ data: util.Utf8ArrayToStr(bytes) });
+                        });
+                    }())
                 }
             });
-        }
+        } 
     })
 }
 

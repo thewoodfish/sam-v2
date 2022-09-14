@@ -125,7 +125,7 @@
 								(async function () {
 									await res.json().then(res => {
 										// if name is/isn't recognized
-										if (JSON.parse(res.data)[1]) {
+										if (!JSON.parse(res.data)[1]) {
 											main.resume();
 											main.echo(`[[b;blue;]"${data}"] is not recognized onchain. Please enter the [[b;blue;]"create"] command to create a new Samaritan`);
 										} else {
@@ -143,18 +143,16 @@
 											.then(res => {
 												(async function () {
 													await res.json().then(res => {
+														downloadObjectAsJson(res.data, 'did_document');
+
 														main.resume();
-
-														// main.echo(`Samaritan created! Technical Details: `);
-														// main.echo(`Name: [[b;blue;]"${res.data.name}"]`);
-														// main.echo(`DID: [[b;blue;]"${res.data.did}"]`);
-														// main.echo(`DID Document IPFS CID: [[b;blue;]"${res.data.doc_cid}"]`);
-														// main.echo(`Samaritan Keys: [[b;blue;]"${res.data.keys}"] ([[b;red;] You have 30 seconds to copy them.])`);
-
+														main.echo(`DID document successfully retrieved.`);
 													});
 												})();  
 											})
 										}
+
+										main.pop();
 									});
 								})();  
 							})
@@ -179,3 +177,13 @@
 				}
 			});
 		});
+
+		function downloadObjectAsJson(exportObj, exportName){
+			var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(exportObj);
+			var dn = document.createElement('a');
+			dn.setAttribute("href",     dataStr);
+			dn.setAttribute("download", exportName + ".json");
+			document.body.appendChild(dn); // required for firefox
+			dn.click();
+			dn.remove();
+		}
