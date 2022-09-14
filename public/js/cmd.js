@@ -77,7 +77,19 @@
 											.then(res => {
 												(async function () {
 													await res.json().then(res => {
-														
+														main.resume();
+
+														main.echo(`Samaritan created! Technical Details: `);
+														main.echo(`Name: [[b;blue;]"${res.data.name}"]`);
+														main.echo(`DID: [[b;blue;]"${res.data.did}"]`);
+														main.echo(`DID Document IPFS CID: [[b;blue;]"${res.data.doc_cid}"]`);
+														main.echo(`Samaritan Keys: [[b;blue;]"${res.data.keys}"] ([[b;red;] You have 30 seconds to copy them.])`);
+
+														main.pause();
+														setTimeout(() => {
+															main.update(-1, "Samaritan Keys: [[b;blue;]**************************************************************************************]").resume();
+															main.pop();
+														}, 30000);
 													});
 												})();  
 											})

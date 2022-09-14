@@ -1,9 +1,12 @@
 
-// Get client IP address from request object ----------------------
-let getClientAddress = (req)  => {
-    return (req.headers['x-forwarded-for'] || '').split(',')[0] 
-    || req.connection.remoteAddress;
-};
+let createDIDoc = (did) => {
+    let json = {
+        "@context": "https://www.w3.org/ns/did/v1",
+        "id": did
+    }
+
+    return JSON.stringify(json);
+}
 
 
-module.exports = { getClientAddress};
+module.exports = { createDIDoc, };

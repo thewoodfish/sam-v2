@@ -28,6 +28,7 @@ import * as net from "./network.js";
 
 // substrate client imports
 import { ApiPromise, WsProvider } from '@polkadot/api';
+import { mnemonicGenerate } from '@polkadot/util-crypto';
 const { Keyring } = require('@polkadot/keyring');
 
 // global
@@ -55,22 +56,67 @@ async function verifyExistence(req, res) {
 
 // add new Samaritan to chain
 async function createSamaritan(req, res) {
+    const mnemonic = mnemonicGenerate();
+    const sam = keyring.addFromUri(mnemonic, { name: req.name }, 'sr25519');
 
+    // change address to nice format for DID creation
+    keyring.setSS58Format(0);
+    const DID = `did:sam:root:${sam.address.toLowerCase()}`;
+
+    const transfer = api.tx.samaritan.createSamaritan(req.name, sam.address.toLowerCase());
+    const hash = await transfer.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+        if (status.isInBlock) {
+            events.forEach(({ event: { data, method, section }, phase }) => {
+                if (section.match("samaritan", "i")) {
+                    // create DID document and upload it to IPFS then retrieve its CID
+                    let did_doc = util.createDIDoc(DID);
+                    (async function() {
+                        // commit to IPFS
+                        await net.uploadToIPFS(did_doc).then(cid => {
+                            console.log("The CID is  " + cid);
+
+                            // send the CID onchain to record the creation of the DID document
+                            (async function() {
+                                const tx = api.tx.samaritan.acknowledgeDoc(req.name, cid);
+                                const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+                                    if (status.isInBlock) {
+                                        events.forEach(({ event: { data, method, section }, phase }) => {
+                                            if (section.match("samaritan", "i")) 
+                                                res.send({ data: {
+                                                    did: DID,
+                                                    doc_cid: cid.toString(),
+                                                    keys: mnemonic,
+                                                    name: req.name
+                                                } });
+                                        });
+                                    } 
+                                });
+                            }())
+                        });
+                    }())
+                }
+            });
+        } 
+    });
 }
-
  
 app.get('', (req, res) => {
     res.render('terminal', { text: 'This is EJS' })
 })
 
-// check if the DID or pseudoname exists onchain
-app.post('/verify', (req, res) => {
-    verifyExistence(req.body, res);
+// test route
+app.post('/test', (req, res) => {
+    createSamaritan(req.body, res);
 })
 
 // create Samaritan
 app.post('/create', (req, res) => {
     createSamaritan(req.body, res);
+})
+
+// create Samaritan
+app.post('/verify', (req, res) => {
+    verifyExistence(req.body, res);
 })
 
 
