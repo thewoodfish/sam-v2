@@ -22,12 +22,12 @@
 										// if name is/isn't recognized
 										main.resume();
 
-										if (JSON.parse(res.data)[1]) {
-
-										} else {
+										if (JSON.parse(res.data)[1]) 
+											main.echo(`The DID for [[b;blue;]"${data}"] is [[b;blue;]"${JSON.parse(res.data[0])}"]`);
+										else 
 											main.echo(`[[b;blue;]"${data}"] is not recognized onchain. Please enter the [[b;blue;]"create"] command to create a new Samaritan`);
-											main.pop();
-										}
+										
+										main.pop();
 									});
 								})();  
 							})
@@ -100,6 +100,67 @@
 						}
 					}, {
 						prompt: 'What will you call your Samaritan: ',
+						onPop: function(before, after) {
+							this.pop();
+						},
+					});
+				},
+
+				read: function() {
+					this.push(function(data) {
+						if (data) {
+							this.echo("Verifying existence onchain...");
+							this.pause();
+
+							fetch ("/verify", {
+								method: 'post',
+								headers: {
+									'Content-Type': 'application/json'
+								},
+								body: JSON.stringify({
+									'name': data,
+								})
+							})
+							.then(res => {
+								(async function () {
+									await res.json().then(res => {
+										// if name is/isn't recognized
+										if (JSON.parse(res.data)[1]) {
+											main.resume();
+											main.echo(`[[b;blue;]"${data}"] is not recognized onchain. Please enter the [[b;blue;]"create"] command to create a new Samaritan`);
+										} else {
+											// attempt to read DID document
+											main.echo("Retrieving your DID document...");
+											fetch ("/read", {
+												method: 'post',
+												headers: {
+													'Content-Type': 'application/json'
+												},
+												body: JSON.stringify({
+													"name": data
+												})
+											})
+											.then(res => {
+												(async function () {
+													await res.json().then(res => {
+														main.resume();
+
+														// main.echo(`Samaritan created! Technical Details: `);
+														// main.echo(`Name: [[b;blue;]"${res.data.name}"]`);
+														// main.echo(`DID: [[b;blue;]"${res.data.did}"]`);
+														// main.echo(`DID Document IPFS CID: [[b;blue;]"${res.data.doc_cid}"]`);
+														// main.echo(`Samaritan Keys: [[b;blue;]"${res.data.keys}"] ([[b;red;] You have 30 seconds to copy them.])`);
+
+													});
+												})();  
+											})
+										}
+									});
+								})();  
+							})
+						}
+					}, {
+						prompt: 'What is the name of your Samaritan: ',
 						onPop: function(before, after) {
 							this.pop();
 						},
