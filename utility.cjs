@@ -1,13 +1,4 @@
 
-let createDIDoc = (did) => {
-    let json = {
-        "@context": ["https://www.w3.org/ns/did/v1"],
-        "id": did
-    }
-
-    return JSON.stringify(json);
-}
-
 
 function Utf8ArrayToStr(array) {
 
@@ -56,4 +47,4 @@ function Utf8ArrayToStr(array) {
     return out;
 }
 
-module.exports = { createDIDoc, Utf8ArrayToStr };
+module.exports = { Utf8ArrayToStr };

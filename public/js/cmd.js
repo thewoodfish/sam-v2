@@ -165,6 +165,126 @@
 					});
 				},
 
+				deactivate: function() {
+					this.push(function(data) {
+						if (data) {
+							this.echo("Verifying existence onchain...");
+							this.pause();
+
+							fetch ("/verify", {
+								method: 'post',
+								headers: {
+									'Content-Type': 'application/json'
+								},
+								body: JSON.stringify({
+									'name': data,
+								})
+							})
+							.then(res => {
+								(async function () {
+									await res.json().then(res => {
+										// if name is/isn't recognized
+										if (!JSON.parse(res.data)[1]) {
+											main.resume();
+											main.echo(`[[b;blue;]"${data}"] is not recognized onchain. Please enter the [[b;blue;]"create"] command to create a new Samaritan`);
+										} else {
+											// attempt to read DID document
+											main.echo("Deactivating your Samaritan...");
+											fetch ("/change-visibility", {
+												method: 'post',
+												headers: {
+													'Content-Type': 'application/json'
+												},
+												body: JSON.stringify({
+													"name": data,
+													"state": false		// deactivate
+												})
+											})
+											.then(res => {
+												(async function () {
+													await res.json().then(res => {
+														if (res.data == "deactivated") {
+															main.resume();
+															main.echo(`[[b;blue;]"${data}"] has been successfully deactivated.`);
+														}
+													});
+												})();  
+											})
+										}
+
+										main.pop();
+									});
+								})();  
+							})
+						}
+					}, {
+						prompt: 'What is the name of your Samaritan: ',
+						onPop: function(before, after) {
+							this.pop();
+						},
+					});
+				},
+
+				activate: function() {
+					this.push(function(data) {
+						if (data) {
+							this.echo("Verifying existence onchain...");
+							this.pause();
+
+							fetch ("/verify", {
+								method: 'post',
+								headers: {
+									'Content-Type': 'application/json'
+								},
+								body: JSON.stringify({
+									'name': data,
+								})
+							})
+							.then(res => {
+								(async function () {
+									await res.json().then(res => {
+										// if name is/isn't recognized
+										if (!JSON.parse(res.data)[1]) {
+											main.resume();
+											main.echo(`[[b;blue;]"${data}"] is not recognized onchain. Please enter the [[b;blue;]"create"] command to create a new Samaritan`);
+										} else {
+											// attempt to read DID document
+											main.echo("Activating your Samaritan...");
+											fetch ("/change-visibility", {
+												method: 'post',
+												headers: {
+													'Content-Type': 'application/json'
+												},
+												body: JSON.stringify({
+													"name": data,
+													"state": true	// activate
+												})
+											})
+											.then(res => {
+												(async function () {
+													await res.json().then(res => {
+														if (res.data == "activated") {
+															main.resume();
+															main.echo(`[[b;blue;]"${data}"] has been successfully activated.`);
+														}
+													});
+												})();  
+											})
+										}
+
+										main.pop();
+									});
+								})();  
+							})
+						}
+					}, {
+						prompt: 'What is the name of your Samaritan: ',
+						onPop: function(before, after) {
+							this.pop();
+						},
+					});
+				},
+
 			}, {
 				greetings: function () {
 					return greetings.innerHTML
@@ -182,7 +302,7 @@
 			var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(exportObj);
 			var dn = document.createElement('a');
 			dn.setAttribute("href",     dataStr);
-			dn.setAttribute("download", exportName + ".json");
+			dn.setAttribute("download", exportName + ".jsonld");
 			document.body.appendChild(dn); // required for firefox
 			dn.click();
 			dn.remove();
