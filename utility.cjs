@@ -47,4 +47,9 @@ function Utf8ArrayToStr(array) {
     return out;
 }
 
-module.exports = { Utf8ArrayToStr };
+function extractInfo(json) {
+    // extract URL from json
+    return { url: json["schema:url"], author: json["schema:author"]["@id"] };
+}
+
+module.exports = { Utf8ArrayToStr, extractInfo };

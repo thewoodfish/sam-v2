@@ -69,7 +69,6 @@ async function createSamaritan(req, res) {
                     // create DID document and upload it to IPFS then retrieve its CID
                     (async function () {
                         await net.createDIDoc(DID, mnemonic).then(did_doc => {
-                            console.log(JSON.parse(did_doc));
                             (async function () {
                                 // commit to IPFS
                                 await net.uploadToIPFS(did_doc).then(cid => {
@@ -139,9 +138,18 @@ async function changeVisibility(req, res) {
     })
 }
 
+// record access for website
+async function recordAccess(req, res) {
+    // parse JSON-ld document to get URL and author DID
+    const info = util.extractInfo(req.json);
+
+    // submit transaction to add website to the network
+
+}
+
 // text function
 async function test(req, res) {
-
+    console.log(req.data);
 }
 
 app.get('', (req, res) => {
@@ -171,6 +179,11 @@ app.post('/read', (req, res) => {
 // change Samaritan visibility
 app.post('/change-visibility', (req, res) => {
     changeVisibility(req.body, res);
+})
+
+// register website accesses
+app.post('/record-access', (req, res) => {
+    recordAccess(req.body, res);
 })
 
 // listen on port 3000

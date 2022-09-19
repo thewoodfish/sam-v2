@@ -18,6 +18,21 @@
 			color: var(--color,#aaa);
 		}
 
+		.web-upload {
+			box-shadow: 0px 0px 4px 1px #c7c7c7;
+			text-align: center;
+			border-radius: 10px;
+			padding: 20px;
+			position: fixed;
+			left: 35%;
+			top: 35%;
+			z-index: 9999999999;
+		}
+
+		.hidden {
+			display: none;
+		}
+
 	</style>
 </head>
 
@@ -28,6 +43,53 @@
 																																
 	   </template>
 
+	   <!-- document uwebsite registry upload modal -->
+	  <div class="web-upload hidden">
+			<h3>Add your website to the network</h3>
+			<p>Please upload your website <code>profileDocument</code> to the network</p>.
+			<form>
+				<input type="file" accept=".jsonld" onchange="previewFile()">
+				<!-- <button onclick="return false">Upload</button> -->
+			</form>
+			<br>
+			<small><button onclick="hide()">cancel</button></small>
+	  </div>
+	  <script>
+		function previewFile() {
+			const content = document.querySelector('.content');
+			const [file] = document.querySelector('input[type=file]').files;
+			const reader = new FileReader();
+
+			reader.addEventListener("load", () => {
+				// send the result to the server
+				fetch ("/record-access", {
+					method: 'post',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						'data':  reader.result,
+					})
+				})
+				.then(res => {
+					(async function () {
+						await res.json().then(res => {
+							hide();
+							console.log(res);
+						});
+					})();  
+				});
+			}, false);
+
+			if (file) 
+				reader.readAsText(file);
+		}
+
+		function hide() {
+			document.querySelector(".web-upload").classList.add("hidden");
+		}
+		
+	  </script>
 	   <script src="js/cmd.js"></script>
 </body>
 

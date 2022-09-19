@@ -225,6 +225,11 @@
 					});
 				},
 
+				register: function() {
+					// upload JSON-ld document to register website access
+					qs(".web-upload").classList.remove("hidden");
+				},
+
 				activate: function() {
 					this.push(function(data) {
 						if (data) {
@@ -301,9 +306,15 @@
 		function downloadObjectAsJson(exportObj, exportName){
 			var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(exportObj);
 			var dn = document.createElement('a');
+			
 			dn.setAttribute("href",     dataStr);
 			dn.setAttribute("download", exportName + ".jsonld");
 			document.body.appendChild(dn); // required for firefox
+			
 			dn.click();
 			dn.remove();
+		}
+
+		function qs(tag) {
+			return document.querySelector(tag);
 		}
