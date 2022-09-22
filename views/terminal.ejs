@@ -87,21 +87,19 @@
 
 	  <script>
 		document.querySelector(".file").addEventListener("change", (e) => {
-			sendToServer(e.target.dataset.param);
+			sendToServer(e.target.dataset.param, e.target.className);
 		}, false);
 
 		document.querySelector(".file-1").addEventListener("change", (e) => {
-			sendToServer(e.target.dataset.param);
+			sendToServer(e.target.dataset.param, e.target.className);
 		}, false);
 
-		function sendToServer(url) {
+		function sendToServer(url, clas) {
 			const content = document.querySelector('.content');
-			const [file] = document.querySelector('input[type=file]').files;
+			const [file] = document.querySelector(`.${clas}`).files;
 			const reader = new FileReader();
 
 			reader.addEventListener("load", () => {
-			console.log(url);
-
 				// send the result to the server
 				fetch (url, {
 					method: 'post',
