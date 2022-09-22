@@ -138,14 +138,71 @@ async function changeVisibility(req, res) {
     })
 }
 
-// record access for website
-async function recordAccess(req, res) {
+// add website to network
+async function addWebsite(req, res) {
     // parse JSON-ld document to get URL and author DID
-    const info = util.extractInfo(req.json);
+    const info = util.extractInfo(JSON.parse(req.data));
+    const wn = JSON.parse(req.data)["schema:name"];
 
-    // submit transaction to add website to the network
+    // create new account for website management
+    const mnemonic = mnemonicGenerate();
+    const web = keyring.addFromUri(mnemonic, { name: wn }, 'sr25519');
 
+    (async function () {
+        // commit to IPFS
+        await net.uploadToIPFS(req.data).then(cid => {
+            console.log("The CID is  " + cid);
+
+            // send the CID onchain to record the addition of the website
+            (async function () {
+                const tx = api.tx.samaritan.addWebsite(info.url, cid, info.author);
+                const _tx = await tx.signAndSend(/* web */ alice, ({ events = [], status }) => {
+                    if (status.isInBlock) {
+                        events.forEach(({ event: { data, method, section }, phase }) => {
+                            if (section.match("samaritan", "i"))
+                                res.send({
+                                    data: {
+                                        name: wn,
+                                        keys: mnemonic,
+                                        address: web.address
+                                    }
+                                });
+                        });
+                    }
+                });
+            }())
+        });
+    }());
 }
+
+async function addWebAccess(req, res) {
+    // parse JSON-ld document to get URL and author DID
+    const info = util.extractInfo(JSON.parse(req.data));
+    const wn = JSON.parse(req.data)["schema:name"];
+
+    (async function () {
+        // commit to IPFS
+        await net.uploadToIPFS(req.data).then(cid => {
+            console.log("The CID is  " + cid);
+
+            // send the CID onchain to record the addition of the access list
+            (async function () {
+                const tx = api.tx.samaritan.addWebAccess(info.url, cid, info.author, util.getAccessCount(req.data));
+                const _tx = await tx.signAndSend(/* web */ alice, ({ events = [], status }) => {
+                    if (status.isInBlock) {
+                        events.forEach(({ event: { data, method, section }, phase }) => {
+                            if (section.match("samaritan", "i"))
+                                res.send({
+                                    data: { url: data.toHuman()[0] }
+                                });
+                        });
+                    }
+                });
+            }())
+        });
+    }());
+}
+
 
 // text function
 async function test(req, res) {
@@ -182,8 +239,13 @@ app.post('/change-visibility', (req, res) => {
 })
 
 // register website accesses
-app.post('/record-access', (req, res) => {
-    recordAccess(req.body, res);
+app.post('/add-website', (req, res) => {
+    addWebsite(req.body, res);
+})
+
+// add website accesses
+app.post('/add-webaccess', (req, res) => {
+    addWebAccess(req.body, res);
 })
 
 // listen on port 3000

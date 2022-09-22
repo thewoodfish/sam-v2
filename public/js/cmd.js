@@ -227,7 +227,12 @@
 
 				register: function() {
 					// upload JSON-ld document to register website access
-					qs(".web-upload").classList.remove("hidden");
+					qs(".web-upload-1").classList.remove("hidden");
+				},
+
+				add: function(acc) {
+					// upload JSON-ld document to register website access
+					qs(".web-upload-2").classList.remove("hidden");
 				},
 
 				activate: function() {

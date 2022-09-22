@@ -18,21 +18,33 @@
 			color: var(--color,#aaa);
 		}
 
-		.web-upload {
+		.web-upload-1, .web-upload-2 {
 			box-shadow: 0px 0px 4px 1px #c7c7c7;
 			text-align: center;
 			border-radius: 10px;
 			padding: 20px;
 			position: fixed;
-			left: 35%;
-			top: 35%;
+			left: 30%;
+			top: 30%;
 			z-index: 9999999999;
 		}
 
 		.hidden {
 			display: none;
 		}
+		
+		.affirm {
+			text-align: center;
+		}
 
+		.blue {
+			color: blue;
+			font-weight: 700;
+		}
+
+		.cancel {
+			cursor: pointer;
+		}
 	</style>
 </head>
 
@@ -43,26 +55,55 @@
 																																
 	   </template>
 
-	   <!-- document uwebsite registry upload modal -->
-	  <div class="web-upload hidden">
-			<h3>Add your website to the network</h3>
-			<p>Please upload your website <code>profileDocument</code> to the network</p>.
-			<form>
-				<input type="file" accept=".jsonld" onchange="previewFile()">
-				<!-- <button onclick="return false">Upload</button> -->
-			</form>
-			<br>
-			<small><button onclick="hide()">cancel</button></small>
-	  </div>
+	<!-- document website registry upload modal -->
+	<div class="web-upload-1 hidden">
+		<div class="affirm">
+			<p class="res"></p>
+		</div>
+		<h3>Add your website to the network</h3>
+		<p>Please upload your website <code>profileDocument</code> to the network</p>.
+		<form>
+			<input type="file" class="file" accept=".jsonld" data-param="add-website">
+			<!-- <button onclick="return false">Upload</button> -->
+		</form>
+		<br>
+		<small><a onclick="hide(1)" class="cancel">cancel</a></small>
+	</div>
+
+		   <!-- document access registry upload modal -->
+	<div class="web-upload-2 hidden">
+		<div class="affirm">
+			<p class="res"></p>
+		</div>
+		<h3>Add Access Config</h3>
+		<p>Please upload your website's <code>accessDocument</code> to the network</p>.
+		<form>
+			<input type="file" class="file-1" accept=".jsonld"  data-param="add-webaccess">
+			<!-- <button onclick="return false">Upload</button> -->
+		</form>
+		<br>
+		<small><a onclick="hide(2)" class="cancel">cancel</a></small>
+	</div>
+
 	  <script>
-		function previewFile() {
+		document.querySelector(".file").addEventListener("change", (e) => {
+			sendToServer(e.target.dataset.param);
+		}, false);
+
+		document.querySelector(".file-1").addEventListener("change", (e) => {
+			sendToServer(e.target.dataset.param);
+		}, false);
+
+		function sendToServer(url) {
 			const content = document.querySelector('.content');
 			const [file] = document.querySelector('input[type=file]').files;
 			const reader = new FileReader();
 
 			reader.addEventListener("load", () => {
+			console.log(url);
+
 				// send the result to the server
-				fetch ("/record-access", {
+				fetch (url, {
 					method: 'post',
 					headers: {
 						'Content-Type': 'application/json'
@@ -74,8 +115,11 @@
 				.then(res => {
 					(async function () {
 						await res.json().then(res => {
-							hide();
-							console.log(res);
+							if (url != 'add-webaccess')
+								qs(".res").innerHTML = 
+									`<code class="blue">${res.data.name}</code> has been added to the network. The website keys are: <br> <code class="blue">${res.data.keys}</code>`;
+							else 
+								qs(".res").innerHTML = `Access list for <code class="blue">${res.data.name}</code> has been added to the network`;
 						});
 					})();  
 				});
@@ -85,8 +129,8 @@
 				reader.readAsText(file);
 		}
 
-		function hide() {
-			document.querySelector(".web-upload").classList.add("hidden");
+		function hide(no) {
+			document.querySelector(`.web-upload-${no}`).classList.add("hidden");
 		}
 		
 	  </script>

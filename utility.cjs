@@ -52,4 +52,14 @@ function extractInfo(json) {
     return { url: json["schema:url"], author: json["schema:author"]["@id"] };
 }
 
-module.exports = { Utf8ArrayToStr, extractInfo };
+// extract number of access data asked
+function getAccessCount(data) {
+    let list = JSON.parse(data)["sam:accepts"];
+    let count = 0;
+
+    for (count; count < list.length; count++);
+
+    return count;
+}
+
+module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount };
