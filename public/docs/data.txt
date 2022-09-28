@@ -1,0 +1,9 @@
+{
+  "attr": {
+    "name": "Adedeji",
+    "role_model": "Steve Jobs"
+  },
+  "personal": true,
+  "mode": "public",
+}
+

@@ -62,4 +62,10 @@ function getAccessCount(data) {
     return count;
 }
 
-module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount };
+// returns date according to the XML Date Spec
+function getXMLDate() {
+    const now = new Date();
+    return `${now.getFullYear()}-${now.getMonth() > 9 ? now.getMonth() : "0" + now.getMonth()}-${now.getDay() > 9 ? now.getDay() : "0" + now.getDay()}T${now.getHours()}:${now.getMinutes()}:${now.getSeconds() + now.getTimezoneOffset()}`;
+}
+
+module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate };

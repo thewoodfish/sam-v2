@@ -29,19 +29,23 @@ import * as net from "./network.js";
 // substrate client imports
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { mnemonicGenerate } from '@polkadot/util-crypto';
-import { readSync } from "fs";
 const { Keyring } = require('@polkadot/keyring');
 
 // global
-const wsProvider = new WsProvider('ws://127.0.0.1:9944');
-const api = await ApiPromise.create({ provider: wsProvider });
+// const wsProvider = new WsProvider('ws://127.0.0.1:9944');
+// const api = await ApiPromise.create({ provider: wsProvider });
 
 const keyring = new Keyring({ type: 'sr25519' });
 const alice = keyring.addFromUri('//Alice');
 
-// check if the CID or pseudoname exists onchain
+// check if the CID or S-name exists onchain
 async function verifyExistence(req, res) {
-    const transfer = api.tx.samaritan.checkExistence(req.name)
+
+    // check if its a CID or a S-name that was sent
+    let is_did = true;
+    req.name.indexOf("did:sam") == -1 ? is_did = false : is_did = true;
+
+    const transfer = api.tx.samaritan.checkExistence(req.name, is_did)
     const hash = await transfer.signAndSend(alice, ({ events = [], status }) => {
         if (status.isInBlock) {
             events.forEach(({ event: { data, method, section }, phase }) => {
@@ -61,7 +65,7 @@ async function createSamaritan(req, res) {
     keyring.setSS58Format(0);
     const DID = `did:sam:root:${sam.address.toLowerCase()}`;
 
-    const transfer = api.tx.samaritan.createSamaritan(req.name, sam.address.toLowerCase());
+    const transfer = api.tx.samaritan.createSamaritan(req.name, DID);
     const hash = await transfer.signAndSend(/* sam */ alice, ({ events = [], status }) => {
         if (status.isInBlock) {
             events.forEach(({ event: { data, method, section }, phase }) => {
@@ -103,110 +107,21 @@ async function createSamaritan(req, res) {
     });
 }
 
-// read DID document
-async function readDocument(req, res) {
-    // retrieve CID from the chain
-    const transfer = api.tx.samaritan.getCid(req.name, "read");
-    const hash = await transfer.signAndSend(alice, ({ events = [], status }) => {
-        if (status.isInBlock) {
-            events.forEach(({ event: { data, method, section }, phase }) => {
-                if (section.match("samaritan", "i")) {
-                    // let cid = data[1]; // IPFS CID
-                    let cid = data.toHuman()[1];
-                    (async function () {
-                        // read document from IPFS
-                        await net.getFromIPFS(cid).then(bytes => {
-                            res.send({ data: util.Utf8ArrayToStr(bytes) });
-                        });
-                    }())
-                }
-            });
-        } 
-    })
-}
+// add credential to Samaritan
+async function addCredential(req, res) {
+    // first check whether its a link that was submitted
+    let cred = "";
+    if (req.is_link) 
+        // fetch link from ithe internet and parse the object it contains
+        cred = await net.fetchJSON(req.data);
+    else 
+        cred = JSON.parse(req.data);
 
-// deactivate/activate Samaritan
-async function changeVisibility(req, res) {
-    const transfer = api.tx.samaritan.changeVisibility(req.name, req.state);
-    const hash = await transfer.signAndSend(alice, ({ events = [], status }) => {
-        if (status.isInBlock) {
-            events.forEach(({ event: { data, method, section }, phase }) => {
-                if (section.match("samaritan", "i")) 
-                    res.send({ data: data.toHuman()[1]});
-            });
-        } 
-    })
-}
+    // in the credential document, the "about" parameter can be a Samaritan name, in that case we need to retrieve its DID from onchain
+    
 
-// add website to network
-async function addWebsite(req, res) {
-    // parse JSON-ld document to get URL and author DID
-    const info = util.extractInfo(JSON.parse(req.data));
-    const wn = JSON.parse(req.data)["schema:name"];
-
-    // create new account for website management
-    const mnemonic = mnemonicGenerate();
-    const web = keyring.addFromUri(mnemonic, { name: wn }, 'sr25519');
-
-    (async function () {
-        // commit to IPFS
-        await net.uploadToIPFS(req.data).then(cid => {
-            console.log("The CID is  " + cid);
-
-            // send the CID onchain to record the addition of the website
-            (async function () {
-                const tx = api.tx.samaritan.addWebsite(info.url, cid, info.author);
-                const _tx = await tx.signAndSend(/* web */ alice, ({ events = [], status }) => {
-                    if (status.isInBlock) {
-                        events.forEach(({ event: { data, method, section }, phase }) => {
-                            if (section.match("samaritan", "i"))
-                                res.send({
-                                    data: {
-                                        name: wn,
-                                        keys: mnemonic,
-                                        address: web.address
-                                    }
-                                });
-                        });
-                    }
-                });
-            }())
-        });
-    }());
-}
-
-async function addWebAccess(req, res) {
-    // parse JSON-ld document to get URL and author DID
-    const info = util.extractInfo(JSON.parse(req.data));
-    const wn = JSON.parse(req.data)["schema:name"];
-
-    (async function () {
-        // commit to IPFS
-        await net.uploadToIPFS(req.data).then(cid => {
-            console.log("The CID is  " + cid);
-
-            // send the CID onchain to record the addition of the access list
-            (async function () {
-                const tx = api.tx.samaritan.addWebAccess(info.url, cid, info.author, util.getAccessCount(req.data));
-                const _tx = await tx.signAndSend(/* web */ alice, ({ events = [], status }) => {
-                    if (status.isInBlock) {
-                        events.forEach(({ event: { data, method, section }, phase }) => {
-                            if (section.match("samaritan", "i"))
-                                res.send({
-                                    data: { url: data.toHuman()[0] }
-                                });
-                        });
-                    }
-                });
-            }())
-        });
-    }());
-}
-
-
-// text function
-async function test(req, res) {
-    console.log(req.data);
+    // construct verifiable credential
+    let vc = net.constructVC(req.did, cred);
 }
 
 app.get('', (req, res) => {
@@ -215,7 +130,7 @@ app.get('', (req, res) => {
 
 // test route
 app.post('/test', (req, res) => {
-    test(req, res);
+    addCredential(req.body, res);
 })
 
 // create Samaritan
@@ -228,25 +143,11 @@ app.post('/verify', (req, res) => {
     verifyExistence(req.body, res);
 })
 
-// read DID document
-app.post('/read', (req, res) => {
-    readDocument(req.body, res);
+// verify Samaritan existence
+app.post('/add-credential', (req, res) => {
+    addCredential(req.body, res);
 })
 
-// change Samaritan visibility
-app.post('/change-visibility', (req, res) => {
-    changeVisibility(req.body, res);
-})
-
-// register website accesses
-app.post('/add-website', (req, res) => {
-    addWebsite(req.body, res);
-})
-
-// add website accesses
-app.post('/add-webaccess', (req, res) => {
-    addWebAccess(req.body, res);
-})
 
 // listen on port 3000
 app.listen(port, () => console.info(`Listening on port ${port}`));

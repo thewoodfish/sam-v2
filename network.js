@@ -9,10 +9,12 @@ const __dirname = path.dirname(__filename);
 
 import * as IPFS from "ipfs-core";
 const toBuffer = require('it-to-buffer');
-
-// import { Ed25519VerificationKey2020 } from '@digitalbazaar/ed25519-verification-key-2020';
 const { Keyring } = require('@polkadot/keyring');
 
+const fs = require("fs");
+const https = require("https");
+
+const util = require("./utility.cjs");
 
 const ipfs = await IPFS.create();
 
@@ -35,20 +37,11 @@ export async function getFromIPFS(cid) {
     return bufferedContents;
 }
 
-// async function _generateVM(did, mnemonic) {
-//     mnemonic = Uint8Array.from(mnemonic.split("").map(x => x.charCodeAt()));
-
-//     const edKeyPair = await Ed25519VerificationKey2020.generate({ id: did /* seed: mnem */ });
-//     const data = await edKeyPair.export({ publicKey: true });
-
-//     return data;
-// }
-
 function generateVM(did, hash, mnemnic, suffix) {
     // generate a hard derivation from the mnemonic
     const keyring = new Keyring();
-
     let nkey = keyring.createFromUri(`${mnemnic}//${suffix}`);
+
     return {
         "id": did + hash,
         "type": "Ed25519VerificationKey",
@@ -59,11 +52,12 @@ function generateVM(did, hash, mnemnic, suffix) {
 }
 
 export async function createDIDoc(did, mnemonic) {
-    let vm = await generateVM(did, `#key-0`, mnemonic, "assertion");
+    let vm = generateVM(did, `#key-0`, mnemonic, "assertion");
 
     let json = {
         "@context": [
             "https://www.w3.org/ns/did/v1",
+            "https://www.sam.org/did/v1"
         ],
         "id": did,
         "assertionMethod": [
@@ -74,3 +68,44 @@ export async function createDIDoc(did, mnemonic) {
     return JSON.stringify(json);
 }
 
+export async function fetchJSON(url) {
+    const link = "public/docs/data.txt";
+    const file = fs.createWriteStream(link);
+
+    https.get(url, response => {
+        var stream = response.pipe(file);
+
+        stream.on("finish", function() {
+            // get JSON content
+            fs.readFile(link, 'utf8', function (err, data) {
+                if (err) 
+                    return console.log(err);
+
+                return JSON.parse(JSON.stringify(data));
+              });
+        });
+    });
+}
+
+
+// construct VC here and sign it (as per let the user assert it (not the best to beleive))
+export function constructVC(did, cred, index) {
+    let attr = cred.attr;
+    let type = cred.type;
+
+    let json = {
+        "@context": [
+            "https://www.w3.org/2018/credentials/v1",
+        ],
+        "id": `${did}/vc/${index}`,
+        "type": ["VerifiableCredential", `${type}Credential`],
+        "issuer": did,
+        "issuanceDate": util.getXMLDate(),
+        "credentialSubject": {
+            "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+            "email": {
+                "value": "explorer@xmail.com"
+            }
+        }
+    }
+}

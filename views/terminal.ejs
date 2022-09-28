@@ -45,51 +45,35 @@
 		.cancel {
 			cursor: pointer;
 		}
+
+		.modal {
+			background-color: #fff;
+		}
 	</style>
 </head>
 
 <body>
 	<template id="greetings">
 																Samaritan: A Digital Identity Solution. v0.0.1
-															To begin, enter "start"; For help, enter "help"
+																			For help, enter "help"
 																																
 	   </template>
 
-	<!-- document website registry upload modal -->
-	<div class="web-upload-1 hidden">
+	   <!-- upload JSON credential -->
+	<div class="web-upload-1 hidden modal">
 		<div class="affirm">
 			<p class="res"></p>
 		</div>
-		<h3>Add your website to the network</h3>
-		<p>Please upload your website <code>profileDocument</code> to the network</p>.
+		<h3>Add an attribute to your Samaritan</h3>
+		<p>Please upload a conforming <code>JSON document</code> to the network</p>.
 		<form>
-			<input type="file" class="file" accept=".jsonld" data-param="add-website">
-			<!-- <button onclick="return false">Upload</button> -->
+			<input type="file" class="file-1" accept=".json"  data-param="add-webaccess">
 		</form>
 		<br>
 		<small><a onclick="hide(1)" class="cancel">cancel</a></small>
 	</div>
 
-		   <!-- document access registry upload modal -->
-	<div class="web-upload-2 hidden">
-		<div class="affirm">
-			<p class="res"></p>
-		</div>
-		<h3>Add Access Config</h3>
-		<p>Please upload your website's <code>accessDocument</code> to the network</p>.
-		<form>
-			<input type="file" class="file-1" accept=".jsonld"  data-param="add-webaccess">
-			<!-- <button onclick="return false">Upload</button> -->
-		</form>
-		<br>
-		<small><a onclick="hide(2)" class="cancel">cancel</a></small>
-	</div>
-
-	  <script>
-		document.querySelector(".file").addEventListener("change", (e) => {
-			sendToServer(e.target.dataset.param, e.target.className);
-		}, false);
-
+	<script>
 		document.querySelector(".file-1").addEventListener("change", (e) => {
 			sendToServer(e.target.dataset.param, e.target.className);
 		}, false);
@@ -108,16 +92,13 @@
 					},
 					body: JSON.stringify({
 						'data':  reader.result,
+						'is_link': false
 					})
 				})
 				.then(res => {
 					(async function () {
 						await res.json().then(res => {
-							if (url != 'add-webaccess')
-								qs(".res").innerHTML = 
-									`<code class="blue">${res.data.name}</code> has been added to the network. The website keys are: <br> <code class="blue">${res.data.keys}</code>`;
-							else 
-								qs(".res").innerHTML = `Access list for <code class="blue">${res.data.name}</code> has been added to the network`;
+							console.log(res);
 						});
 					})();  
 				});
@@ -131,8 +112,8 @@
 			document.querySelector(`.web-upload-${no}`).classList.add("hidden");
 		}
 		
-	  </script>
-	   <script src="js/cmd.js"></script>
+	</script>
+	<script src="js/cmd.js"></script>
 </body>
 
 </html>
