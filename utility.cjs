@@ -68,15 +68,4 @@ function getXMLDate() {
     return `${now.getFullYear()}-${now.getMonth() > 9 ? now.getMonth() : "0" + now.getMonth()}-${now.getDay() > 9 ? now.getDay() : "0" + now.getDay()}T${now.getHours()}:${now.getMinutes()}:${now.getSeconds() + now.getTimezoneOffset()}`;
 }
 
-// get JSON contents from file
-async function readJSONFile(url) {
-    // get JSON content
-    return fs.readFile(url, 'utf8', function (err, data) {
-        if (err) 
-            return console.log(err);
-
-        return JSON.parse(JSON.stringify(data));
-    });
-}
-
-module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate, readJSONFile };
+module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate };

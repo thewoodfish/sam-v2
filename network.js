@@ -10,14 +10,20 @@ const __dirname = path.dirname(__filename);
 import * as IPFS from "ipfs-core";
 import { json } from "express";
 const toBuffer = require('it-to-buffer');
+
 const { Keyring } = require('@polkadot/keyring');
+import { stringToU8a, u8aToHex } from '@polkadot/util';
 
 const fs = require("fs");
 const https = require("https");
 
-const util = require("./utility.cjs");
+const keyring = new Keyring({ type: 'sr25519' });
 
+const util = require("./utility.cjs");
 const ipfs = await IPFS.create();
+
+// using alice here temporarily
+const alice = keyring.addFromUri('//Alice');
 
 export async function uploadToIPFS(path) {
     const { cid } = await ipfs.add(path);
@@ -53,7 +59,7 @@ function generateVM(did, hash, mnemnic, suffix) {
 }
 
 export async function createDIDoc(did, mnemonic) {
-    let vm = generateVM(did, `#key-0`, mnemonic, "assertion");
+    let vm = generateVM(did, getKeyHash("assertion"), mnemonic, "assertion");
 
     let json = {
         "@context": [
@@ -110,4 +116,40 @@ export function constructVC(did, cred, sbjct, nonce) {
     }
 
     return json;
+}
+
+// get JSON contents from file
+async function readJSONFile(url) {
+    // get JSON content
+    return fs.readFile(url, 'utf8', function (err, data) {
+        if (err) 
+            return console.log(err);
+
+        return JSON.parse(JSON.stringify(data));
+    });
+}
+
+function getKeyHash(key) {
+    let hash = {
+        "authentication": "#key-0",
+        "assertion": "key-1"
+    };
+
+    return hash[key];
+}
+
+// sign a credential
+async function signCredential(did, cred) {
+    const message = stringToU8a(JSON.stringify(cred));
+    const signature = alice.sign(message);
+
+    cred["proof"] = {
+        "type": "Ed25519VerificationKey",
+        "created": getXMLDate(),
+        "verificationMethod": did + getKeyHash("assertion"),
+        "proofPurpose": "assertionMethod",
+        "proofValue": signature
+    };
+
+    return cred;
 }
