@@ -8,6 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 import * as IPFS from "ipfs-core";
+import { json } from "express";
 const toBuffer = require('it-to-buffer');
 const { Keyring } = require('@polkadot/keyring');
 
@@ -68,28 +69,29 @@ export async function createDIDoc(did, mnemonic) {
     return JSON.stringify(json);
 }
 
-export async function fetchJSON(url) {
+async function fetchJSON(url) {
     const link = "public/docs/data.txt";
     const file = fs.createWriteStream(link);
+    var data = {};
 
     https.get(url, response => {
         var stream = response.pipe(file);
 
         stream.on("finish", function() {
-            // get JSON content
             fs.readFile(link, 'utf8', function (err, data) {
                 if (err) 
                     return console.log(err);
-
-                return JSON.parse(JSON.stringify(data));
-              });
+        
+                json_content = data = JSON.parse(JSON.stringify(data));
+                console.log(data);
+            });
         });
     });
+
 }
 
-
 // construct VC here and sign it (as per let the user assert it (not the best to beleive))
-export function constructVC(did, cred, index) {
+export function constructVC(did, cred, sbjct, nonce) {
     let attr = cred.attr;
     let type = cred.type;
 
@@ -97,15 +99,15 @@ export function constructVC(did, cred, index) {
         "@context": [
             "https://www.w3.org/2018/credentials/v1",
         ],
-        "id": `${did}/vc/${index}`,
+        "id": `${did}/vc/${nonce}}`,
         "type": ["VerifiableCredential", `${type}Credential`],
         "issuer": did,
         "issuanceDate": util.getXMLDate(),
         "credentialSubject": {
-            "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
-            "email": {
-                "value": "explorer@xmail.com"
-            }
+            "id": sbjct,
+            "attr": attr
         }
     }
+
+    return json;
 }

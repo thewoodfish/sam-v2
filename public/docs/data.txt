@@ -1,9 +1,10 @@
 {
+  "about": "Woodfish",
+  "type": "PersonalInformation",
   "attr": {
     "name": "Adedeji",
     "role_model": "Steve Jobs"
   },
-  "personal": true,
-  "mode": "public",
+  "scope": "public"
 }
 

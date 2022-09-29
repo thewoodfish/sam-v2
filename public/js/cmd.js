@@ -39,6 +39,9 @@
 											await res.json().then(res => {
 												main.resume();
 
+												// save did to localstorage
+												localStorage["sam_did"] = res.data.did;
+
 												main.echo(`Samaritan created! Technical Details: `);
 												main.echo(`Name: [[b;blue;]"${res.data.name}"]`);
 												main.echo(`DID: [[b;blue;]"${res.data.did}"]`);
@@ -102,6 +105,7 @@
 								'Content-Type': 'application/json'
 							},
 							body: JSON.stringify({
+								'did': localStorage['sam_did'],
 								'data': link,
 								'is_link': true
 							})

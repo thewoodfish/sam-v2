@@ -10,6 +10,9 @@ const __dirname = path.dirname(__filename);
 const express = require('express');
 const app = express();
 const port = 3000;
+const fs = require('fs');
+const https = require("https");
+
 app.use(express.json());
 
 // static files
@@ -32,8 +35,8 @@ import { mnemonicGenerate } from '@polkadot/util-crypto';
 const { Keyring } = require('@polkadot/keyring');
 
 // global
-// const wsProvider = new WsProvider('ws://127.0.0.1:9944');
-// const api = await ApiPromise.create({ provider: wsProvider });
+const wsProvider = new WsProvider('ws://127.0.0.1:9944');
+const api = await ApiPromise.create({ provider: wsProvider });
 
 const keyring = new Keyring({ type: 'sr25519' });
 const alice = keyring.addFromUri('//Alice');
@@ -110,18 +113,68 @@ async function createSamaritan(req, res) {
 // add credential to Samaritan
 async function addCredential(req, res) {
     // first check whether its a link that was submitted
-    let cred = "";
-    if (req.is_link) 
-        // fetch link from ithe internet and parse the object it contains
-        cred = await net.fetchJSON(req.data);
-    else 
-        cred = JSON.parse(req.data);
+    let credential;
+    if (req.is_link) {
+        // await net.fetchJSON(req.data); // fetch link from ithe internet and parse the object it contains
+        const link = "public/docs/data.txt";
+        const file = fs.createWriteStream(link);
 
-    // in the credential document, the "about" parameter can be a Samaritan name, in that case we need to retrieve its DID from onchain
-    
+        https.get(req.data, response => {
+            var stream = response.pipe(file);
 
-    // construct verifiable credential
-    let vc = net.constructVC(req.did, cred);
+            stream.on("finish", function() {
+                fs.readFile(link, 'utf8', function (err, data) {
+                    if (err) 
+                        return console.log(err);
+            
+                    credential = JSON.parse(JSON.stringify(data));
+                    handleCredential(credential, req.did);
+                });
+            });
+        });
+    } else 
+        handleCredential(JSON.parse(req.data), req.did); // just parse
+
+}
+
+async function handleCredential(credential, did) {
+    let cred = JSON.parse(credential);
+    let vc_did = cred.about;
+
+    if (vc_did.indexOf("did:sam:root") == -1) {
+        // in the credential document, the "about" parameter can be a Samaritans name, in that case we need to retrieve its DID from the network
+        const transfer = api.tx.samaritan.retrieveDid(cred.about);
+        const hash = await transfer.signAndSend(alice, ({ events = [], status }) => {
+            if (status.isInBlock) {
+                events.forEach(({ event: { data, method, section }, phase }) => {
+                    if (section.match("samaritan", "i")) {
+                        vc_did = data.toHuman()[1];
+                        constructCredential(did, cred, vc_did);
+                    }
+                });
+            }
+        });
+    } else 
+        constructCredential(did, cred, vc_did);
+
+}
+
+async function constructCredential(did, cred, subject) {
+    // first get the nonce to use for the credential for `did`
+    const transfer = api.tx.samaritan.getVcNonce(did);
+        const hash = await transfer.signAndSend(alice, ({ events = [], status }) => {
+            if (status.isInBlock) {
+                events.forEach(({ event: { data, method, section }, phase }) => {
+                    if (section.match("samaritan", "i")) {
+                        let nonce = data.toHuman()[1];
+
+                        // construct credential
+                        let vc = net.constructVC(did, cred, subject, nonce);
+                        console.log(vc);
+                    }
+                });
+            }
+        });
 }
 
 app.get('', (req, res) => {

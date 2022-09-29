@@ -91,6 +91,7 @@
 						'Content-Type': 'application/json'
 					},
 					body: JSON.stringify({
+						'did': localStorage['sam_did'],
 						'data':  reader.result,
 						'is_link': false
 					})
