@@ -68,4 +68,16 @@ function getXMLDate() {
     return `${now.getFullYear()}-${now.getMonth() > 9 ? now.getMonth() : "0" + now.getMonth()}-${now.getDay() > 9 ? now.getDay() : "0" + now.getDay()}T${now.getHours()}:${now.getMinutes()}:${now.getSeconds() + now.getTimezoneOffset()}`;
 }
 
-module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate };
+// return second half of array
+function splitArray(arr) {
+    let box = [];
+
+    for (var i = 0; i < 32; i++)
+        box[i] = arr[i];
+
+    return box;
+}
+
+const uint8ToBase64 = (arr) => Buffer.from(arr).toString('base64');
+
+module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate, splitArray, uint8ToBase64 };

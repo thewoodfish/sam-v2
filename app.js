@@ -171,10 +171,13 @@ async function constructCredential(did, cred, subject) {
                         // construct credential
                         let vc = net.constructVC(did, cred, subject, nonce);
 
-                        // sign the credential
-                        let svc = util.signCredential(vc);
-
-                        console.log(svc);
+                        (async function() {
+                            // sign the credential
+                            await net.signCredential(did, vc).then(svc => {
+                                console.log(svc);
+                                console.log(JSON.stringify(svc));
+                            })
+                        })()
                     }
                 });
             }

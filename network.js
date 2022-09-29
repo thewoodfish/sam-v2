@@ -132,24 +132,24 @@ async function readJSONFile(url) {
 function getKeyHash(key) {
     let hash = {
         "authentication": "#key-0",
-        "assertion": "key-1"
+        "assertion": "#key-1"
     };
 
     return hash[key];
 }
 
 // sign a credential
-async function signCredential(did, cred) {
+export async function signCredential(did, cred) {
     const message = stringToU8a(JSON.stringify(cred));
     const signature = alice.sign(message);
 
     cred["proof"] = {
         "type": "Ed25519VerificationKey",
-        "created": getXMLDate(),
+        "created": util.getXMLDate(),
         "verificationMethod": did + getKeyHash("assertion"),
         "proofPurpose": "assertionMethod",
-        "proofValue": signature
-    };
+        "proofValue": util.uint8ToBase64(signature) // base-64 encoding
+    }; 
 
     return cred;
 }
