@@ -105,7 +105,7 @@ export function constructVC(did, cred, sbjct, nonce) {
         "@context": [
             "https://www.w3.org/2018/credentials/v1",
         ],
-        "id": `${did}/vc/${nonce}}`,
+        "id": `${did}/vc/${nonce}`,
         "type": ["VerifiableCredential", `${type}Credential`],
         "issuer": did,
         "issuanceDate": util.getXMLDate(),

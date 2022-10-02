@@ -1,5 +1,7 @@
 const fs = require("fs");
 
+const crypto = require("crypto-js");
+
 function Utf8ArrayToStr(array) {
 
     // adopted from:
@@ -78,6 +80,16 @@ function splitArray(arr) {
     return box;
 }
 
+function encryptData(key, text) {
+    // Encrypte the data
+    return crypto.AES.encrypt(text, key).toString();
+}
+
+function decryptData(key, cipher) {
+    // Decrypting the data
+    return crypto.AES.decrypt(cipher, key) .toString(crypto.enc.Utf8);
+}
+
 const uint8ToBase64 = (arr) => Buffer.from(arr).toString('base64');
 
-module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate, splitArray, uint8ToBase64 };
+module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate, splitArray, uint8ToBase64, decryptData, encryptData };

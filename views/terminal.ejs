@@ -67,7 +67,7 @@
 		<h3>Add an attribute to your Samaritan</h3>
 		<p>Please upload a conforming <code>JSON document</code> to the network</p>.
 		<form>
-			<input type="file" class="file-1" accept=".json"  data-param="add-webaccess">
+			<input type="file" class="file-1" accept=".json"  data-param="/add-credential">
 		</form>
 		<br>
 		<small><a onclick="hide(1)" class="cancel">cancel</a></small>
@@ -99,7 +99,7 @@
 				.then(res => {
 					(async function () {
 						await res.json().then(res => {
-							console.log(res);
+							echo(`Verifiable credential[subject: ${res.data[1]}] successfully added to the network`);
 						});
 					})();  
 				});
@@ -107,6 +107,10 @@
 
 			if (file) 
 				reader.readAsText(file);
+		}
+
+		function echo(text) {
+			qs(".res").innerText = text;
 		}
 
 		function hide(no) {

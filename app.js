@@ -34,6 +34,8 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { mnemonicGenerate } from '@polkadot/util-crypto';
 const { Keyring } = require('@polkadot/keyring');
 
+const key = "1232657e8yuifhsfs78fv93";
+
 // global
 const wsProvider = new WsProvider('ws://127.0.0.1:9944');
 const api = await ApiPromise.create({ provider: wsProvider });
@@ -128,60 +130,83 @@ async function addCredential(req, res) {
                         return console.log(err);
             
                     credential = JSON.parse(JSON.stringify(data));
-                    handleCredential(credential, req.did);
+                    handleCredential(res, credential, req.did);
                 });
             });
         });
     } else 
-        handleCredential(JSON.parse(req.data), req.did); // just parse
+        handleCredential(res, req.data, req.did); // just parse
 
 }
 
-async function handleCredential(credential, did) {
+async function handleCredential(res, credential, did) {
     let cred = JSON.parse(credential);
-    let vc_did = cred.about;
+    let vc_did = cred.subject;
 
     if (vc_did.indexOf("did:sam:root") == -1) {
         // in the credential document, the "about" parameter can be a Samaritans name, in that case we need to retrieve its DID from the network
-        const transfer = api.tx.samaritan.retrieveDid(cred.about);
+        const transfer = api.tx.samaritan.retrieveDid(cred.subject);
         const hash = await transfer.signAndSend(alice, ({ events = [], status }) => {
             if (status.isInBlock) {
                 events.forEach(({ event: { data, method, section }, phase }) => {
                     if (section.match("samaritan", "i")) {
                         vc_did = data.toHuman()[1];
-                        constructCredential(did, cred, vc_did);
+                        constructCredential(res, did, cred, vc_did);
                     }
                 });
             }
         });
     } else 
-        constructCredential(did, cred, vc_did);
+        constructCredential(res, did, cred, vc_did);
 
 }
 
-async function constructCredential(did, cred, subject) {
+async function constructCredential(res, did, cred, subject) {
+    // get scope of credential
+    let pub = true;
+    if (cred.scope) pub = cred.scope == "private" ? false : true;
+
     // first get the nonce to use for the credential for `did`
-    const transfer = api.tx.samaritan.getVcNonce(did);
-        const hash = await transfer.signAndSend(alice, ({ events = [], status }) => {
-            if (status.isInBlock) {
-                events.forEach(({ event: { data, method, section }, phase }) => {
-                    if (section.match("samaritan", "i")) {
-                        let nonce = data.toHuman()[1];
+    const transfer = api.tx.samaritan.getVcNonce();
+    const hash = await transfer.signAndSend(alice, ({ events = [], status }) => {
+        if (status.isInBlock) {
+            events.forEach(({ event: { data, method, section }, phase }) => {
+                if (section.match("samaritan", "i")) {
+                    let nonce = data.toHuman()[0];
 
-                        // construct credential
-                        let vc = net.constructVC(did, cred, subject, nonce);
+                    // construct credential
+                    let vc = net.constructVC(did, cred, subject, nonce);
 
-                        (async function() {
-                            // sign the credential
-                            await net.signCredential(did, vc).then(svc => {
-                                console.log(svc);
-                                console.log(JSON.stringify(svc));
-                            })
-                        })()
-                    }
-                });
-            }
-        });
+                    (async function() {
+                        // sign the credential
+                        await net.signCredential(did, vc).then(svc => { 
+                            let cipher = util.encryptData(JSON.stringify(svc));
+
+                            // encrypt then upload to IPFS
+                            (async function () {
+                                await net.uploadToIPFS(cipher).then(cid => {
+                                    console.log("The CID is  " + cid);
+
+                                    // notify the network
+                                    (async function () {
+                                        const tx = api.tx.samaritan.recordCredential(did, subject, cid, pub);
+                                        const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+                                            if (status.isInBlock) {
+                                                events.forEach(({ event: { data, method, section }, phase }) => {
+                                                    if (section.match("samaritan", "i"))
+                                                        res.send({ data: data.toHuman() });
+                                                });
+                                            }
+                                        });
+                                    }())
+                                });
+                            })()
+                        })
+                    })()
+                }
+            });
+        }
+    });
 }
 
 app.get('', (req, res) => {
@@ -190,7 +215,10 @@ app.get('', (req, res) => {
 
 // test route
 app.post('/test', (req, res) => {
-    addCredential(req.body, res);
+    const mnemonic = mnemonicGenerate();
+    const sam = keyring.addFromUri(mnemonic, { name: req.name }, 'sr25519');
+
+    console.log(sam);
 })
 
 // create Samaritan

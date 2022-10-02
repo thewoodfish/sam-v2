@@ -114,8 +114,7 @@
 							(async function () {
 								await res.json().then(res => {
 									main.resume();
-									
-									console.log(res);
+									main.echo(`Verifiable credential[subject: ${res.data[1]}] successfully added to the network`);
 								})
 							})()
 						})
