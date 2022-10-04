@@ -113,7 +113,7 @@ export function constructVC(did, cred, sbjct, nonce) {
             "id": sbjct,
             "attr": attr
         }
-    }
+    }       
 
     return json;
 }
@@ -139,17 +139,20 @@ function getKeyHash(key) {
 }
 
 // sign a credential
-export async function signCredential(did, cred) {
+export async function signCredential(mnemonic, did, cred) {
     const message = stringToU8a(JSON.stringify(cred));
-    const signature = alice.sign(message);
+    const sam = keyring.addFromUri(mnemonic, { did: did }, 'sr25519');
+    const signature = sam.sign(message);
+    
+    cred["proof"] = cred["proof"] ? cred["proof"] : [];
 
-    cred["proof"] = {
+    cred["proof"].push({
         "type": "Ed25519VerificationKey",
         "created": util.getXMLDate(),
         "verificationMethod": did + getKeyHash("assertion"),
         "proofPurpose": "assertionMethod",
         "proofValue": util.uint8ToBase64(signature) // base-64 encoding
-    }; 
+    });
 
     return cred;
 }

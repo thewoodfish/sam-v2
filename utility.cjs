@@ -49,9 +49,42 @@ function Utf8ArrayToStr(array) {
     return out;
 }
 
+function removeXtra(str) {
+    let x = 0;
+    while (true) {
+        for (var i = 0; i < u.length; i++, x++) {
+            if (u[i].match(/[a-z]/i)) {
+                for (var j = x; j < u.length; j++, x++) {
+                    console.log(x);
+                    if (u[j].match(/[a-z]/i)) 
+                        return;
+                }
+            }
+        }
+    }
+}
+
+function extractIDs(str) {
+    let ret = [];
+
+    [].forEach.call(str.split("-"), (s) => {
+        if (s) ret.push(s);
+    });
+
+    return ret;
+}
+
 function extractInfo(json) {
     // extract URL from json
     return { url: json["schema:url"], author: json["schema:author"]["@id"] };
+}
+
+function parseVCURL(url) {
+    // extract did and nonce from URL
+    return {
+        did: url.split('/')[0],
+        nonce: url.split('/')[2]
+    }
 }
 
 // extract number of access data asked
@@ -92,4 +125,4 @@ function decryptData(key, cipher) {
 
 const uint8ToBase64 = (arr) => Buffer.from(arr).toString('base64');
 
-module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate, splitArray, uint8ToBase64, decryptData, encryptData };
+module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate, splitArray, uint8ToBase64, decryptData, encryptData, extractIDs, parseVCURL };

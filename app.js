@@ -130,38 +130,38 @@ async function addCredential(req, res) {
                         return console.log(err);
             
                     credential = JSON.parse(JSON.stringify(data));
-                    handleCredential(res, credential, req.did);
+                    handleCredential(res, credential, req.did, req.keys);
                 });
             });
         });
     } else 
-        handleCredential(res, req.data, req.did); // just parse
+        handleCredential(res, req.data, req.did, req.keys); // just parse
 
 }
 
-async function handleCredential(res, credential, did) {
+async function handleCredential(res, credential, did,  keys) {
     let cred = JSON.parse(credential);
     let vc_did = cred.subject;
 
     if (vc_did.indexOf("did:sam:root") == -1) {
-        // in the credential document, the "about" parameter can be a Samaritans name, in that case we need to retrieve its DID from the network
+        // in the credential document, the "subject" parameter can be a Samaritans name, in that case we need to retrieve its DID from the network
         const transfer = api.tx.samaritan.retrieveDid(cred.subject);
         const hash = await transfer.signAndSend(alice, ({ events = [], status }) => {
             if (status.isInBlock) {
                 events.forEach(({ event: { data, method, section }, phase }) => {
                     if (section.match("samaritan", "i")) {
                         vc_did = data.toHuman()[1];
-                        constructCredential(res, did, cred, vc_did);
+                        constructCredential(res, did, cred, vc_did, keys);
                     }
                 });
             }
         });
     } else 
-        constructCredential(res, did, cred, vc_did);
+        constructCredential(res, did, cred, vc_did, keys);
 
 }
 
-async function constructCredential(res, did, cred, subject) {
+async function constructCredential(res, did, cred, subject, keys) {
     // get scope of credential
     let pub = true;
     if (cred.scope) pub = cred.scope == "private" ? false : true;
@@ -179,8 +179,8 @@ async function constructCredential(res, did, cred, subject) {
 
                     (async function() {
                         // sign the credential
-                        await net.signCredential(did, vc).then(svc => { 
-                            let cipher = util.encryptData(JSON.stringify(svc));
+                        await net.signCredential(keys, did, vc).then(svc => { 
+                            let cipher = util.encryptData(key, JSON.stringify(svc));
 
                             // encrypt then upload to IPFS
                             (async function () {
@@ -202,6 +202,94 @@ async function constructCredential(res, did, cred, subject) {
                                 });
                             })()
                         })
+                    })()
+                }
+            });
+        }
+    });
+}
+
+// get the credentials of a Samaritan
+async function listCredentials(req, res) {
+    // check if its a CID or a S-name that was sent
+    if (req.id.indexOf("did:sam:root") == -1) {
+        const transfer = api.tx.samaritan.retrieveDid(req.id);
+        const hash = await transfer.signAndSend(alice, ({ events = [], status }) => {
+            if (status.isInBlock) {
+                events.forEach(({ event: { data, method, section }, phase }) => {
+                    if (section.match("samaritan", "i")) {
+                        let did = data.toHuman()[1];
+                        listCreds(res, did, req.is_auth);
+                    }
+                });
+            }
+        });
+    } else 
+        listCreds(res, req.id, req.is_auth);
+}
+
+// retrieve the credentials from the network
+async function listCreds(res, did, is_auth) {
+    const transfer = api.tx.samaritan.listCredentials(did, is_auth);
+    const hash = await transfer.signAndSend(alice, ({ events = [], status }) => {
+        if (status.isInBlock) {
+            events.forEach(({ event: { data, method, section }, phase }) => {
+                if (section.match("samaritan", "i")) {
+                    res.send({
+                        did: data.toHuman()[0],
+                        data: util.extractIDs(data.toHuman()[1])
+                    });
+                }
+            });
+        }
+    });
+}
+
+// assert verifiable credential
+async function assertCredential(req, res) {
+    // expand credential credential
+    let { did, nonce } = util.parseVCURL(req.url);
+
+    // check whether its the Samaritan that owns the credential that is requesting it
+    let is_same = did == req.did ? true : false;
+
+    const transfer = api.tx.samaritan.getCredential(did, nonce, is_same);
+
+    const hash = await transfer.signAndSend(alice, ({ events = [], status }) => {
+        if (status.isInBlock) {
+            events.forEach(({ event: { data, method, section }, phase }) => {
+                if (section.match("samaritan", "i")) {
+                    let cid = data.toHuman()[1];
+
+                    (async function () {
+                        await net.getFromIPFS(cid).then(arr => {
+                            let bytes = util.Utf8ArrayToStr(arr);
+                            let cred_str = util.decryptData(key, bytes);
+                            let cred = JSON.parse(cred_str);
+        
+                            let vc = net.signCredential(req.keys, req.did, cred);
+                            let cipher = net.encryptData(key, vc);
+
+                            // encrypt then upload to IPFS
+                            (async function () {
+                                await net.uploadToIPFS(cipher).then(cid => {
+
+                                    // notify the network of assertion
+                                    (async function () {
+                                        const tx = api.tx.samaritan.assertCredential(did, req.did, cid, nonce);
+                                        const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+                                            if (status.isInBlock) {
+                                                events.forEach(({ event: { data, method, section }, phase }) => {
+                                                    if (section.match("samaritan", "i"))
+                                                        res.send({ data: data.toHuman() });
+                                                });
+                                            }
+                                        });
+                                    }())
+                                });
+                            })()
+
+                        });
                     })()
                 }
             });
@@ -231,9 +319,19 @@ app.post('/verify', (req, res) => {
     verifyExistence(req.body, res);
 })
 
-// verify Samaritan existence
+// create a verifiable credential
 app.post('/add-credential', (req, res) => {
     addCredential(req.body, res);
+})
+
+// get credential list
+app.post('/list-credentials', (req, res) => {
+    listCredentials(req.body, res);
+})
+
+// assert a credential
+app.post('/assert', (req, res) => {
+    assertCredential(req.body, res);
 })
 
 

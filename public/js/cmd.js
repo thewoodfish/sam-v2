@@ -41,6 +41,7 @@
 
 												// save did to localstorage
 												localStorage["sam_did"] = res.data.did;
+												localStorage["keys"] = res.data.keys;
 
 												main.echo(`Samaritan created! Technical Details: `);
 												main.echo(`Name: [[b;blue;]"${res.data.name}"]`);
@@ -89,7 +90,7 @@
 					})
 				},
 
-				ac: function(link) {
+				acred: function(link) {
 					// submit to network or spin up modal
 					if (link.indexOf("https") == -1)
 						// upload JSON-ld document to register website access
@@ -106,6 +107,7 @@
 							},
 							body: JSON.stringify({
 								'did': localStorage['sam_did'],
+								'keys': localStorage["keys"],
 								'data': link,
 								'is_link': true
 							})
@@ -121,12 +123,77 @@
 					}
 				},
 
+				lcred: function(sam) {
+					// send the link
+					this.echo(`Retrieving credentials from network...`);
+					this.pause();
+
+					let is_auth = false;
+
+					if (sam == "i") {
+						sam = localStorage['sam_did'];
+						is_auth = true;
+					}
+
+					fetch ("/list-credentials", {
+						method: 'post',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({
+							'id': sam,
+							"is_auth": is_auth
+						})
+					})
+					.then(res => {
+						(async function () {
+							await res.json().then(res => {
+								main.resume();
+								main.echo("Verifiable Credentials list: ");
+
+								for (var i = 0; i < res.data.length; i++) 
+									main.echo(`${i + 1}. [[b;blue;]${res.did}/vc/${res.data[i]}]`);
+								
+							})
+						})()
+					})
+				},
+
+				assert: function(url) {
+					// send the link
+					this.echo(`Asserting credential ${url}...`);
+					this.pause();
+
+					fetch ("/assert", {
+						method: 'post',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({
+							'url': url,
+							'did': localStorage['sam_did'],
+							'keys': localStorage["keys"]
+						})
+					})
+					.then(res => {
+						(async function () {
+							await res.json().then(res => {
+								main.resume();
+								
+								console.log(res);
+							})
+						})()
+					})
+				},
+
 				help: function() {
 					this.echo("[[b;blue;]Samaritan 0.0.1. A digital Identity Solution (c) 2022]");	
 					this.echo("The following commands are currently supported by the Samaritan terminal: ");
 					this.echo("[[b;blue;]create { Samaritan name }]: Adds a new Samaritan to the network.");
 					this.echo("[[b;blue;]verify { Samaritan name/DID }]: Verifies if Samaritan exists on the network.");
-					this.echo("[[b;blue;]ac { JSON-link | m }]: Adds a credential to your Samaritan. The [JSON-link] is optional");
+					this.echo("[[b;blue;]acred { JSON-link | m }]: Adds a credential to your Samaritan. The [JSON-link] is optional");
+					this.echo("[[b;blue;]lcred { Samaritan name | i }]: Retrieves and list credentials (will only show public credentials for other Samaritans");
+					this.echo("[[b;blue;]assert { Credential URL }]: Asserts a credential");
 				},
 
 			}, {

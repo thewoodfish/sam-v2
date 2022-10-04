@@ -1,5 +1,5 @@
 {
-  "about": "Woodfish",
+  "subject": "Woodfish",
   "type": "PersonalInformation",
   "attr": {
     "name": "Adedeji",
