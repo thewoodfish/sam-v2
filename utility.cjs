@@ -120,7 +120,7 @@ function encryptData(key, text) {
 
 function decryptData(key, cipher) {
     // Decrypting the data
-    return crypto.AES.decrypt(cipher, key) .toString(crypto.enc.Utf8);
+    return crypto.AES.decrypt(cipher, key).toString(crypto.enc.Utf8);
 }
 
 const uint8ToBase64 = (arr) => Buffer.from(arr).toString('base64');
