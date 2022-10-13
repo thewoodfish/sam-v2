@@ -32,16 +32,27 @@ import * as net from "./network.js";
 
 // substrate client imports
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { mnemonicGenerate } from '@polkadot/util-crypto';
+import { mnemonicGenerate, cryptoWaitReady, blake2AsHex } from '@polkadot/util-crypto';
 const { Keyring } = require('@polkadot/keyring');
+import keyringX from '@polkadot/ui-keyring';
+import {  } from '@polkadot/util-crypto';
 
 
 // global
-// const wsProvider = new WsProvider('ws://127.0.0.1:9944');
-// const api = await ApiPromise.create({ provider: wsProvider });
+const wsProvider = new WsProvider('ws://127.0.0.1:9944');
+const api = await ApiPromise.create({ provider: wsProvider });
+
+const BOLD_TEXT = "Sacha is a great buddy!";
 
 const keyring = new Keyring({ type: 'sr25519' });
+
 const alice = keyring.addFromUri('//Alice');
+
+cryptoWaitReady().then(() => {
+    // load all available addresses and accounts
+    keyringX.loadAll({ ss58Format: 42, type: 'sr25519' });
+  
+  });
 
 // add new Samaritan to chain
 async function createSamaritan(req, res) {
@@ -53,18 +64,18 @@ async function createSamaritan(req, res) {
 
     // generate Keys for Samaritan
     const mnemonic = mnemonicGenerate();
-    const sam = keyring.addFromUri(mnemonic, { name: req.name }, 'sr25519');
+    const sam = keyring.createFromUri(mnemonic, 'sr25519');
     
     keyring.setSS58Format(0);
     const DID = net.createRootDID(sam.address);
 
     // sign communication nonce
-    const nonce = net.signMsg(sam, "Sacha is a great buddy!");
+    const nonce = blake2AsHex(mnemonicGenerate().replace(" ", ""));
+    const hash_key = blake2AsHex(mnemonic);
 
-    // add the nonce to the Keyring instance metadata
-    sam.meta.nonce = nonce;
-    sam.meta.hash_key = net.signMsg(sam, "hash on the mountain");
-    
+    // this would be our test for equality
+    keyringX.saveAddress(sam.address, { nonce, hash_key });
+
     // record event onchain
     const transfer = api.tx.samaritan.createSamaritan(req.name, DID);
     const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
@@ -79,7 +90,7 @@ async function createSamaritan(req, res) {
 
                 // after Samaritan has been recorded, then `really create it` by birthing its DID document
                 if (section.match("samaritan", "i")) {
-                    createDIDDocument(res, DID, mnemonic, sam);
+                    createDIDDocument(res, DID, mnemonic, sam, hash_key, nonce);
                 } 
             });
         }
@@ -87,11 +98,11 @@ async function createSamaritan(req, res) {
 }
 
 // create the DID document
-async function createDIDDocument(res, did, mnemonic, sam) {
+async function createDIDDocument(res, did, mnemonic, sam, hash_key, nonce) {
     let doc = net.createDIDDoc(did, mnemonic);
 
     // create hash link
-    let hash = util.encryptData(util.Utf8ArrayToStr(sam.meta.hash_key), doc);
+    let hash = util.encryptData(util.Utf8ArrayToStr(hash_key), doc);
 
     // upload to d-Storage
     (async function () {
@@ -107,7 +118,7 @@ async function createDIDDocument(res, did, mnemonic, sam) {
                         events.forEach(({ event: { data, method, section }, phase }) => {
                             if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
                                 return res.send({
-                                    data: { msg: "could not create Samaritan" }, error: true
+                                    data: { msg: "could not create samaritan" }, error: true
                                 })
                             } 
             
@@ -116,7 +127,7 @@ async function createDIDDocument(res, did, mnemonic, sam) {
                                     data: {
                                         seed: mnemonic,
                                         did: did,
-                                        nonce:  util.Utf8ArrayToStr(sam.meta.nonce),
+                                        nonce:  util.Utf8ArrayToStr(nonce),
                                     }, 
                                     error: false
                                 })
@@ -127,6 +138,40 @@ async function createDIDDocument(res, did, mnemonic, sam) {
             }())
         })
     })()
+}
+
+// initialize a Samaritan
+async function initSamaritan(req, res) {
+    // what we mean by initialization really, is getting that communication nonce
+    try {
+        // general new communication nonce
+        const nonce = blake2AsHex(mnemonicGenerate().replace(" ", ""));
+        let exists = true;
+
+        [].forEach.call(keyringX.getAddresses(), (addr) => {
+            if (addr.meta.hash_key == blake2AsHex(req.keys)) {
+                // update nonce
+                keyringX.saveAddress(addr.address, { nonce });
+                exists = true;
+            }
+        });
+
+        res.send({
+            data: { 
+                msg: exists ? `Initialization of your samaritan into terminal complete` : "samaritan could not be initialized",
+                nonce: exists ? nonce : ""
+            },
+
+            error: !exists
+        })
+    } catch (err) {
+        return res.send({
+            data: { 
+                msg: "invalid mnemonic specified"
+            },
+            error: true
+        })
+    }
 }
 
 app.get('', (req, res) => {
@@ -144,6 +189,11 @@ app.get('/test', (req, res) => {
 // create Samaritan
 app.post('/new', (req, res) => {
     createSamaritan(req.body, res);
+})
+
+// create Samaritan
+app.post('/init', (req, res) => {
+    initSamaritan(req.body, res);
 })
 
 

@@ -27,11 +27,6 @@ var _fixLength = require("../hex/fixLength");
  */
 function numberToHex(value) {
   let bitLength = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : -1;
-
-  if (value === undefined || value === null || isNaN(value)) {
-    return '0x';
-  }
-
-  const hex = value.toString(16);
+  const hex = (!value || Number.isNaN(value) ? 0 : value).toString(16);
   return (0, _fixLength.hexFixLength)(hex.length % 2 ? `0${hex}` : hex, bitLength, true);
 }

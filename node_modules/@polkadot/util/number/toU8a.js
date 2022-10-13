@@ -18,5 +18,5 @@ import { numberToHex } from "./toHex.js";
  */
 
 export function numberToU8a(value, bitLength = -1) {
-  return value === undefined || value === null || isNaN(value) ? new Uint8Array() : hexToU8a(numberToHex(value, bitLength));
+  return hexToU8a(numberToHex(value, bitLength));
 }

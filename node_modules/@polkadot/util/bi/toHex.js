@@ -2,9 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { u8aToHex } from "../u8a/index.js";
 import { nToU8a } from "./toU8a.js";
-/** @internal */
-
-const ZERO_STR = '0x00';
 /**
  * @name nToHex
  * @summary Creates a hex value from a bigint object.
@@ -15,7 +12,7 @@ export function nToHex(value, {
   isLe = false,
   isNegative = false
 } = {}) {
-  return !value ? ZERO_STR : u8aToHex(nToU8a(value, {
+  return u8aToHex(nToU8a(value || 0, {
     bitLength,
     isLe,
     isNegative

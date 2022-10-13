@@ -53,7 +53,7 @@ function nToU8a(value) {
   const valueBi = (0, _toBigInt.nToBigInt)(value);
 
   if (valueBi === _consts._0n) {
-    return bitLength === -1 ? new Uint8Array() : new Uint8Array(Math.ceil((bitLength || 0) / 8));
+    return bitLength === -1 ? new Uint8Array(1) : new Uint8Array(Math.ceil((bitLength || 0) / 8));
   }
 
   const u8a = toU8a(valueBi, isLe, isNegative);

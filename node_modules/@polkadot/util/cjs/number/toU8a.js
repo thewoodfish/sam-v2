@@ -28,5 +28,5 @@ var _toHex = require("./toHex");
  */
 function numberToU8a(value) {
   let bitLength = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : -1;
-  return value === undefined || value === null || isNaN(value) ? new Uint8Array() : (0, _toU8a.hexToU8a)((0, _toHex.numberToHex)(value, bitLength));
+  return (0, _toU8a.hexToU8a)((0, _toHex.numberToHex)(value, bitLength));
 }

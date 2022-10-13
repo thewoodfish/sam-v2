@@ -39,7 +39,7 @@ function bnToU8a(value) {
   const byteLength = bitLength === -1 ? Math.ceil(valueBn.bitLength() / 8) : Math.ceil((bitLength || 0) / 8);
 
   if (!value) {
-    return bitLength === -1 ? new Uint8Array() : new Uint8Array(byteLength);
+    return bitLength === -1 ? new Uint8Array(1) : new Uint8Array(byteLength);
   }
 
   const output = new Uint8Array(byteLength);

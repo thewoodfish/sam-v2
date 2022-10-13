@@ -11,7 +11,7 @@ var _toU8a = require("./toU8a");
 
 // Copyright 2017-2022 @polkadot/util authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-const ZERO_STR = '0x00';
+
 /**
  * @name bnToHex
  * @summary Creates a hex value from a BN.js bignumber object.
@@ -27,14 +27,13 @@ const ZERO_STR = '0x00';
  * bnToHex(new BN(0x123456)); // => '0x123456'
  * ```
  */
-
 function bnToHex(value) {
   let {
     bitLength = -1,
     isLe = false,
     isNegative = false
   } = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-  return !value ? ZERO_STR : (0, _u8a.u8aToHex)((0, _toU8a.bnToU8a)(value, {
+  return (0, _u8a.u8aToHex)((0, _toU8a.bnToU8a)(value, {
     bitLength,
     isLe,
     isNegative
