@@ -36,6 +36,7 @@ import { mnemonicGenerate, cryptoWaitReady, blake2AsHex } from '@polkadot/util-c
 const { Keyring } = require('@polkadot/keyring');
 import keyringX from '@polkadot/ui-keyring';
 import {  } from '@polkadot/util-crypto';
+import { platform } from "os";
 
 
 // global
@@ -54,15 +55,11 @@ cryptoWaitReady().then(() => {
   
   });
 
-// add new Samaritan to chain
-async function createSamaritan(req, res) {
+// add new samaitan to chain
+async function createsamaitan(req, res) {
     const signedBlock = await api.rpc.chain.getBlock();
 
-    // get the api and events at a specific block
-    const apiAt = await api.at(signedBlock.block.header.hash);
-    const allRecords = await apiAt.query.system.events();
-
-    // generate Keys for Samaritan
+    // generate Keys for samaitan
     const mnemonic = mnemonicGenerate();
     const sam = keyring.createFromUri(mnemonic, 'sr25519');
     
@@ -73,24 +70,24 @@ async function createSamaritan(req, res) {
     const nonce = blake2AsHex(mnemonicGenerate().replace(" ", ""));
     const hash_key = blake2AsHex(mnemonic);
 
-    // this would be our test for equality
-    keyringX.saveAddress(sam.address, { nonce, hash_key });
+    // use `keyringX` for storing session data
+    keyringX.saveAddress(sam.address, { nonce, did: DID });
 
     // record event onchain
-    const transfer = api.tx.samaritan.createSamaritan(req.name, DID);
+    const transfer = api.tx.samaitan.createsamaitan(req.name, DID, hash_key);
     const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
         if (status.isInBlock) {
             events.forEach(({ event: { data, method, section }, phase }) => {
                 // check for errors
                 if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
                     return res.send({
-                        data: { msg: "could not create Samaritan" }, error: true
+                        data: { msg: "could not create samaitan" }, error: true
                     })
                 } 
 
-                // after Samaritan has been recorded, then `really create it` by birthing its DID document
-                if (section.match("samaritan", "i")) {
-                    createDIDDocument(res, DID, mnemonic, sam, hash_key, nonce);
+                // after samaitan has been recorded, then `really create it` by birthing its DID document
+                if (section.match("samaitan", "i")) {
+                    createDIDDocument(res, DID, mnemonic, hash_key, nonce);
                 } 
             });
         }
@@ -98,7 +95,7 @@ async function createSamaritan(req, res) {
 }
 
 // create the DID document
-async function createDIDDocument(res, did, mnemonic, sam, hash_key, nonce) {
+async function createDIDDocument(res, did, mnemonic, hash_key, nonce) {
     let doc = net.createDIDDoc(did, mnemonic);
 
     // create hash link
@@ -112,22 +109,22 @@ async function createDIDDocument(res, did, mnemonic, sam, hash_key, nonce) {
             
             // send the CID onchain to record the creation of the DID document
             (async function () {
-                const tx = api.tx.samaritan.acknowledgeDoc(did, cid, hash);
+                const tx = api.tx.samaitan.acknowledgeDoc(did, cid, hash);
                 const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
                     if (status.isInBlock) {
                         events.forEach(({ event: { data, method, section }, phase }) => {
                             if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
                                 return res.send({
-                                    data: { msg: "could not create samaritan" }, error: true
+                                    data: { msg: "could not create samaitan" }, error: true
                                 })
                             } 
             
-                            if (section.match("samaritan", "i")) {
+                            if (section.match("samaitan", "i")) {
                                 return res.send({
                                     data: {
                                         seed: mnemonic,
                                         did: did,
-                                        nonce:  util.Utf8ArrayToStr(nonce),
+                                        nonce:  nonce,
                                     }, 
                                     error: false
                                 })
@@ -140,35 +137,275 @@ async function createDIDDocument(res, did, mnemonic, sam, hash_key, nonce) {
     })()
 }
 
-// initialize a Samaritan
-async function initSamaritan(req, res) {
+// initialize a samaitan
+async function initsamaitan(req, res) {
     // what we mean by initialization really, is getting that communication nonce
     try {
-        // general new communication nonce
-        const nonce = blake2AsHex(mnemonicGenerate().replace(" ", ""));
-        let exists = true;
+        const sam = keyring.createFromUri(req.keys, 'sr25519');
 
-        [].forEach.call(keyringX.getAddresses(), (addr) => {
-            if (addr.meta.hash_key == blake2AsHex(req.keys)) {
-                // update nonce
-                keyringX.saveAddress(addr.address, { nonce });
-                exists = true;
+        // generate new communication nonce
+        const nonce = blake2AsHex(mnemonicGenerate().replace(" ", ""));
+
+        // get sig
+        const sig = blake2AsHex(req.keys);
+
+        // get DID
+        const tx = api.tx.samaitan.fetchAddress(sig);
+        const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+            if (status.isInBlock) {
+                events.forEach(({ event: { data, method, section }, phase }) => {
+                    if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                        return res.send({
+                            data: { msg: "could not find samaitan" }, error: true
+                        })
+                    } 
+    
+                    if (section.match("samaitan", "i")) {
+                        // create session by adding it to keyring
+                        keyringX.saveAddress(sam.address, { nonce, did: data.toHuman()[0] });
+
+                        // went through
+                        return res.send({
+                            data: { 
+                                msg: `initialization complete.`,
+                                nonce
+                            },
+
+                            error: false
+                        })
+                    } 
+                });
             }
         });
 
-        res.send({
-            data: { 
-                msg: exists ? `Initialization of your samaritan into terminal complete` : "samaritan could not be initialized",
-                nonce: exists ? nonce : ""
-            },
-
-            error: !exists
-        })
     } catch (err) {
         return res.send({
             data: { 
-                msg: "invalid mnemonic specified"
+                msg: "samaitan could not be initialized"
             },
+
+            error: true
+        })
+    }
+}
+
+// recieve a DID to look for the samaitan and its corresponding DID document
+async function findsamaitan(req, res) {
+
+}
+
+// rename a samaitan
+async function renamesamaitan(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        const transfer = api.tx.samaitan.renamesamaitan(req.name, auth.did);
+        const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+            if (status.isInBlock) {
+                events.forEach(({ event: { data, method, section }, phase }) => {
+                    // check for errors
+                    if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                        return res.send({
+                            data: { msg: "could not create samaitan" }, error: true
+                        })
+                    } 
+
+                    if (section.match("samaitan", "i")) {
+                        return res.send({
+                            data: { msg: `name change to "${req.name}" successful.` }, error: false
+                        })
+                    } 
+                });
+            }
+        });
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaitan not recognized"
+            },
+
+            error: true
+        })
+    }
+}
+
+// enable or disable a samaitan
+async function alterStatus(req, res) {
+    const auth = isAuth(req.nonce);
+    const cmd = req.cmd == "disable" ? false : true;
+    if (auth.is_auth) {
+        const transfer = api.tx.samaitan.alterState(auth.did, cmd);
+        const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+            if (status.isInBlock) {
+                events.forEach(({ event: { data, method, section }, phase }) => {
+                    // check for errors
+                    if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                        return res.send({
+                            data: { msg: `could not ${req.cmd} samaitan` }, error: true
+                        })
+                    } 
+
+                    if (section.match("samaitan", "i")) {
+                        return res.send({
+                            data: { msg: `status change to "${req.cmd}d" successful.` }, error: false
+                        })
+                    } 
+                });
+            }
+        });
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaitan not recognized"
+            },
+
+            error: true
+        })
+    }
+}
+
+
+// enable or disable a samaitan
+async function describesamaitan(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        // return did
+        return res.send({
+            data: { 
+                msg: `DID: ${auth.did}`
+            },
+
+            error: false
+        })
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaitan not recognized"
+            },
+
+            error: true
+        })
+    }
+}
+
+// init new nonce
+async function refreshSession(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        var nonce = "";
+        [].forEach.call(keyringX.getAddresses(), (addr) => {
+            if (addr.meta.nonce == req.nonce) {
+                nonce = blake2AsHex(mnemonicGenerate().replace(" ", ""));
+                
+                // update
+                keyringX.saveAddress(addr.address, { nonce, did: auth.did });
+            }
+        });
+    
+        return res.send({
+            data: { 
+                msg: `session refreshed.`,
+                nonce
+            },
+
+            error: false
+        })
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaitan not recognized"
+            },
+
+            error: true
+        })
+    }
+}
+
+// delete address and account
+async function cleanSession(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        var nonce = "";
+        [].forEach.call(keyringX.getAddresses(), (addr) => {
+            if (addr.meta.nonce == req.nonce)
+                keyringX.forgetAddress(addr.address);
+        });
+    
+        return res.send({
+            data: { 
+                msg: `your session has ended.`,
+                nonce
+            },
+
+            error: false
+        })
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaitan not recognized"
+            },
+
+            error: true
+        })
+    }
+}
+
+// check keyring and test for equality
+function isAuth(nonce) {
+    var is_auth = false;
+    var did = "";
+    [].forEach.call(keyringX.getAddresses(), (addr) => {
+        if (addr.meta.nonce == nonce) {
+            is_auth = true;
+            did = addr.meta.did;
+        }
+    });
+
+    return { is_auth, did };
+}
+
+// add a samaitan to trust quorum
+async function trustsamaitan(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        // make sure samaitan is not trustin itseld
+        if (req.did != auth.did) {
+            const transfer = api.tx.samaitan.updateQuorum(auth.did, req.did);
+            const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+                if (status.isInBlock) {
+                    events.forEach(({ event: { data, method, section }, phase }) => {
+                        // check for errors
+                        if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                            let error = data.toHuman().dispatchError.Module.error == "0x08000000"
+                                ?   `quorum already filled up` : `'${req.did}' exists in quorum already`;
+                        
+                            return res.send({
+                                data: { msg: error }, error: true
+                            })
+                        } 
+
+                        if (section.match("samaitan", "i")) {
+                            return res.send({
+                                data: { msg: `quorum update successful.` }, error: false
+                            })
+                        } 
+                    });
+                }
+            });
+        } else {
+            return res.send({
+                data: { 
+                    msg: "samaitan cannot be in its quorum"
+                },
+    
+                error: true
+            })
+        }
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaitan not recognized"
+            },
+
             error: true
         })
     }
@@ -186,16 +423,50 @@ app.get('/test', (req, res) => {
     console.log(sam.meta);
 })
 
-// create Samaritan
+// create samaitan
 app.post('/new', (req, res) => {
-    createSamaritan(req.body, res);
+    createsamaitan(req.body, res);
 })
 
-// create Samaritan
+// create samaitan
 app.post('/init', (req, res) => {
-    initSamaritan(req.body, res);
+    initsamaitan(req.body, res);
 })
 
+// find samaitan
+app.post('/find', (req, res) => {
+    findsamaitan(req.body, res);
+})
+
+// find samaitan
+app.post('/rename', (req, res) => {
+    renamesamaitan(req.body, res);
+})
+
+// change a samaitans scope
+app.post('/change-status', (req, res) => {
+    alterStatus(req.body, res);
+})
+
+// get info about samaitan
+app.post('/describe', (req, res) => {
+    describesamaitan(req.body, res);
+})
+
+// get info about samaitan
+app.post('/refresh', (req, res) => {
+    refreshSession(req.body, res);
+})
+
+// clean up session
+app.post('/exit', (req, res) => {
+    cleanSession(req.body, res);
+})
+
+// add to quorum
+app.post('/trust', (req, res) => {
+    trustsamaitan(req.body, res);
+})
 
 // listen on port 3000
 app.listen(port, () => console.info(`Listening on port ${port}`));

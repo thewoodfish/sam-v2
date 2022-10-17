@@ -10,7 +10,18 @@
 							this.echo(`These are common samaritan commands used in various situations:`);
 							this.echo(`new <name>			creates a new samaritan with a non-unique name`);
 							this.echo(`init <keys>			lets your samaritan take control of the terminal`);
-							this.echo(`find <DID>			confirm if samaritan exists and returns DID document`);
+							this.echo(`find <DID>			confirms if samaritan exists and returns DID document and metadata`);
+							this.echo(`rename <new name>   renames your samaritan`);
+							this.echo(`kill                disables your Samaritan`);
+							this.echo(`wake                enables your Samaritan`);
+							this.echo(`desc                gives you information about your Samaritan`);
+							this.echo(`refresh				refreshes terminal connection`);
+							this.echo(`exit                ends your terminal session`);
+							this.echo(`trust <DID>			adds DID to your trust quorum. 2/3 of your quorum carry the same power as your samaritan`);
+							this.echo(`help                informs you about the samaritan terminal`);
+							this.echo(`rotate				rotates your samritan keys and presents you with a new mnemonic`);
+							this.echo(`quorum				lists out all the samaritans in your trust quorum`);
+							this.echo(`revoke <DID>        removes a samaritan from your trust quorum`);
 							break;
 						
 						case "new":
@@ -106,6 +117,306 @@
 
 							break;
 
+						case "find":
+							if (!inSession()) {
+								main.echo(`fatal: no samaritan recognized. See 'sam help'`)
+							} else {
+								// check argument conformance
+								if (!arg2) {
+									this.echo(`fatal: you must provide DID to lookup`);
+									this.echo(`usage: sam find <DID>`);
+								} else {
+									// check did format
+									if (arg2.indexOf("did:sam:root:") == -1) {
+										this.echo(`fatal: invalid DID format`);
+										this.echo(`expected DID format: did:sam:root:<address>"`);
+									} else {
+										this.echo(`querying network...`);
+										this.pause();
+
+										fetch ("/find", {
+											method: 'post',
+											headers: {
+												'Content-Type': 'application/json'
+											},
+											body: JSON.stringify({
+												"did": did
+											})
+										})
+										.then(res => {
+											(async function () {
+												await res.json().then(res => {
+													main.resume();
+
+													// continue
+												})
+											})();  
+										})
+									}
+								}
+							}
+
+							break;
+
+						case "rename":
+							if (!inSession()) {
+								main.echo(`fatal: no samaritan initialized. See 'sam help'`)
+							} else {
+								// check argument conformance
+								if (!arg2) {
+									this.echo(`fatal: you must provide a name`);
+									this.echo(`usage: sam rename <new name>`);
+								} else {
+									this.echo(`renaming...`);
+									this.pause();
+
+									fetch ("/rename", {
+										method: 'post',
+										headers: {
+											'Content-Type': 'application/json'
+										},
+										body: JSON.stringify({
+											"name": arg2,
+											"nonce": getNonce()
+										})
+									})
+									.then(res => {
+										(async function () {
+											await res.json().then(res => {
+												main.resume();
+												
+												if (res.error) 
+													main.echo(`fatal: ${res.data.msg}`);
+												else 
+													main.echo(`${res.data.msg}`);
+												
+											});
+										})();  
+									})
+								}
+							}
+
+							break;
+
+						case "kill":
+							if (!inSession()) {
+								main.echo(`fatal: no samaritan initialized. See 'sam help'`)
+							} else {
+								this.echo(`disabling your Samaritan...`);
+								this.pause();
+
+								fetch ("/change-status", {
+									method: 'post',
+									headers: {
+										'Content-Type': 'application/json'
+									},
+									body: JSON.stringify({
+										"cmd": "disable",
+										"nonce": getNonce()
+									})
+								})
+								.then(res => {
+									(async function () {
+										await res.json().then(res => {
+											main.resume();
+											
+											if (res.error) 
+												main.echo(`fatal: ${res.data.msg}`);
+											else 
+												main.echo(`${res.data.msg}`);
+											
+										});
+									})();  
+								})
+							}
+
+							break;
+
+						case "wake":
+							if (!inSession()) {
+								main.echo(`fatal: no samaritan initialized. See 'sam help'`)
+							} else {
+								this.echo(`changing scope to visible...`);
+								this.pause();
+
+								fetch ("/change-status", {
+									method: 'post',
+									headers: {
+										'Content-Type': 'application/json'
+									},
+									body: JSON.stringify({
+										"cmd": "enable",
+										"nonce": getNonce()
+									})
+								})
+								.then(res => {
+									(async function () {
+										await res.json().then(res => {
+											main.resume();
+											
+											if (res.error) 
+												main.echo(`fatal: ${res.data.msg}`);
+											else 
+												main.echo(`${res.data.msg}`);
+											
+										});
+									})();  
+								})
+							}
+
+							break;
+
+						case "desc":
+							if (!inSession()) {
+								main.echo(`fatal: no samaritan initialized. See 'sam help'`)
+							} else {
+								this.echo(`retrieving information...`);
+								this.pause();
+
+								fetch ("/describe", {
+									method: 'post',
+									headers: {
+										'Content-Type': 'application/json'
+									},
+									body: JSON.stringify({
+										"nonce": getNonce()
+									})
+								})
+								.then(res => {
+									(async function () {
+										await res.json().then(res => {
+											main.resume();
+											
+											if (res.error) 
+												main.echo(`fatal: ${res.data.msg}`);
+											else 
+												main.echo(`${res.data.msg}`);
+												main.echo(`To get more info about Samaritan, see 'sam find <DID>'`);
+											
+										});
+									})();  
+								})
+							}
+
+							break;
+
+						case "refresh":
+							if (!inSession()) {
+								main.echo(`fatal: no samaritan initialized. See 'sam help'`)
+							} else {
+								this.echo(`refreshing session...`);
+								this.pause();
+
+								fetch ("/refresh", {
+									method: 'post',
+									headers: {
+										'Content-Type': 'application/json'
+									},
+									body: JSON.stringify({
+										"nonce": getNonce()
+									})
+								})
+								.then(res => {
+									(async function () {
+										await res.json().then(res => {
+											main.resume();
+											
+											if (res.error) 
+												main.echo(`fatal: ${res.data.msg}`);
+											else {
+												sessionStorage.setItem("nonce", res.data.nonce);
+												main.echo(`${res.data.msg}`);
+											}
+											
+										});
+									})();  
+								})
+							}
+
+							break;
+
+						case "exit":
+							if (!inSession()) {
+								main.echo(`fatal: no samaritan initialized. See 'sam help'`)
+							} else {
+								this.echo(`cleaning up session...`);
+								this.pause();
+
+								fetch ("/exit", {
+									method: 'post',
+									headers: {
+										'Content-Type': 'application/json'
+									},
+									body: JSON.stringify({
+										"nonce": getNonce()
+									})
+								})
+								.then(res => {
+									(async function () {
+										await res.json().then(res => {
+											main.resume();
+											
+											if (res.error) 
+												main.echo(`fatal: ${res.data.msg}`);
+											else {
+												sessionStorage.setItem("nonce", res.data.nonce);
+												main.echo(`${res.data.msg}`);
+												main.echo(`To begin afresh, run 'sam init <keys>'`);
+											}
+											
+										});
+									})();  
+								})
+							}
+
+							break;
+
+						case "trust":
+							if (!inSession()) {
+								main.echo(`fatal: no samaritan initialized. See 'sam help'`)
+							} else {
+								// check argument conformance
+								if (!arg2) {
+									this.echo(`fatal: you must provide a DID`);
+									this.echo(`usage: sam trust <DID>`);
+								} else {
+									// check did format
+									if (arg2.indexOf("did:sam:root:") == -1) {
+										this.echo(`fatal: invalid DID format`);
+										this.echo(`expected DID format: did:sam:root:<address>"`);
+									} else {
+										this.echo(`setting up...`);
+										this.pause();
+
+										fetch ("/trust", {
+											method: 'post',
+											headers: {
+												'Content-Type': 'application/json'
+											},
+											body: JSON.stringify({
+												"did": arg2,
+												"nonce": getNonce()
+											})
+										})
+										.then(res => {
+											(async function () {
+												await res.json().then(res => {
+													main.resume();
+													
+													if (res.error) 
+														main.echo(`fatal: ${res.data.msg}`);
+													else 
+														main.echo(`${res.data.msg}`);
+													
+												});
+											})();  
+										})
+									}
+								}
+							}
+
+							break;
+
 						default:
 							this.echo(`sam: '${arg1}' is not a samaritan command. See 'sam help'.`);
 					}
@@ -139,4 +450,16 @@
 
 		function qs(tag) {
 			return document.querySelector(tag);
+		}
+
+		function inSession() {
+			var exists = false;
+			if (sessionStorage.getItem("nonce")) 
+				exists = true;
+			
+			return exists;
+		}
+
+		function getNonce() {
+			return sessionStorage.getItem("nonce");
 		}
