@@ -55,11 +55,11 @@ cryptoWaitReady().then(() => {
   
   });
 
-// add new samaitan to chain
-async function createsamaitan(req, res) {
+// add new samaritan to chain
+async function createSamaritan(req, res) {
     const signedBlock = await api.rpc.chain.getBlock();
 
-    // generate Keys for samaitan
+    // generate Keys for samaritan
     const mnemonic = mnemonicGenerate();
     const sam = keyring.createFromUri(mnemonic, 'sr25519');
     
@@ -74,19 +74,19 @@ async function createsamaitan(req, res) {
     keyringX.saveAddress(sam.address, { nonce, did: DID });
 
     // record event onchain
-    const transfer = api.tx.samaitan.createsamaitan(req.name, DID, hash_key);
+    const transfer = api.tx.samaritan.createSamaritan(req.name, DID, hash_key);
     const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
         if (status.isInBlock) {
             events.forEach(({ event: { data, method, section }, phase }) => {
                 // check for errors
                 if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
                     return res.send({
-                        data: { msg: "could not create samaitan" }, error: true
+                        data: { msg: "could not create samaritan" }, error: true
                     })
                 } 
 
-                // after samaitan has been recorded, then `really create it` by birthing its DID document
-                if (section.match("samaitan", "i")) {
+                // after samaritan has been recorded, then `really create it` by birthing its DID document
+                if (section.match("samaritan", "i")) {
                     createDIDDocument(res, DID, mnemonic, hash_key, nonce);
                 } 
             });
@@ -109,17 +109,17 @@ async function createDIDDocument(res, did, mnemonic, hash_key, nonce) {
             
             // send the CID onchain to record the creation of the DID document
             (async function () {
-                const tx = api.tx.samaitan.acknowledgeDoc(did, cid, hash);
+                const tx = api.tx.samaritan.acknowledgeDoc(did, cid, hash);
                 const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
                     if (status.isInBlock) {
                         events.forEach(({ event: { data, method, section }, phase }) => {
                             if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
                                 return res.send({
-                                    data: { msg: "could not create samaitan" }, error: true
+                                    data: { msg: "could not create samaritan" }, error: true
                                 })
                             } 
             
-                            if (section.match("samaitan", "i")) {
+                            if (section.match("samaritan", "i")) {
                                 return res.send({
                                     data: {
                                         seed: mnemonic,
@@ -137,8 +137,8 @@ async function createDIDDocument(res, did, mnemonic, hash_key, nonce) {
     })()
 }
 
-// initialize a samaitan
-async function initsamaitan(req, res) {
+// initialize a samaritan
+async function initSamaritan(req, res) {
     // what we mean by initialization really, is getting that communication nonce
     try {
         const sam = keyring.createFromUri(req.keys, 'sr25519');
@@ -150,17 +150,17 @@ async function initsamaitan(req, res) {
         const sig = blake2AsHex(req.keys);
 
         // get DID
-        const tx = api.tx.samaitan.fetchAddress(sig);
+        const tx = api.tx.samaritan.fetchAddress(sig);
         const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
             if (status.isInBlock) {
                 events.forEach(({ event: { data, method, section }, phase }) => {
                     if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
                         return res.send({
-                            data: { msg: "could not find samaitan" }, error: true
+                            data: { msg: "could not find samaritan" }, error: true
                         })
                     } 
     
-                    if (section.match("samaitan", "i")) {
+                    if (section.match("samaritan", "i")) {
                         // create session by adding it to keyring
                         keyringX.saveAddress(sam.address, { nonce, did: data.toHuman()[0] });
 
@@ -181,7 +181,7 @@ async function initsamaitan(req, res) {
     } catch (err) {
         return res.send({
             data: { 
-                msg: "samaitan could not be initialized"
+                msg: "samaritan could not be initialized"
             },
 
             error: true
@@ -189,27 +189,27 @@ async function initsamaitan(req, res) {
     }
 }
 
-// recieve a DID to look for the samaitan and its corresponding DID document
-async function findsamaitan(req, res) {
+// recieve a DID to look for the samaritan and its corresponding DID document
+async function findSamaritan(req, res) {
 
 }
 
-// rename a samaitan
-async function renamesamaitan(req, res) {
+// rename a samaritan
+async function renameSamaritan(req, res) {
     const auth = isAuth(req.nonce);
     if (auth.is_auth) {
-        const transfer = api.tx.samaitan.renamesamaitan(req.name, auth.did);
+        const transfer = api.tx.samaritan.renameSamaritan(req.name, auth.did);
         const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
             if (status.isInBlock) {
                 events.forEach(({ event: { data, method, section }, phase }) => {
                     // check for errors
                     if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
                         return res.send({
-                            data: { msg: "could not create samaitan" }, error: true
+                            data: { msg: "could not rename samaritan." }, error: true
                         })
                     } 
 
-                    if (section.match("samaitan", "i")) {
+                    if (section.match("samaritan", "i")) {
                         return res.send({
                             data: { msg: `name change to "${req.name}" successful.` }, error: false
                         })
@@ -220,7 +220,7 @@ async function renamesamaitan(req, res) {
     } else {
         return res.send({
             data: { 
-                msg: "samaitan not recognized"
+                msg: "samaritan not recognized"
             },
 
             error: true
@@ -228,23 +228,23 @@ async function renamesamaitan(req, res) {
     }
 }
 
-// enable or disable a samaitan
+// enable or disable a samaritan
 async function alterStatus(req, res) {
     const auth = isAuth(req.nonce);
     const cmd = req.cmd == "disable" ? false : true;
     if (auth.is_auth) {
-        const transfer = api.tx.samaitan.alterState(auth.did, cmd);
+        const transfer = api.tx.samaritan.alterState(auth.did, cmd);
         const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
             if (status.isInBlock) {
                 events.forEach(({ event: { data, method, section }, phase }) => {
                     // check for errors
                     if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
                         return res.send({
-                            data: { msg: `could not ${req.cmd} samaitan` }, error: true
+                            data: { msg: `could not ${req.cmd} samaritan` }, error: true
                         })
                     } 
 
-                    if (section.match("samaitan", "i")) {
+                    if (section.match("samaritan", "i")) {
                         return res.send({
                             data: { msg: `status change to "${req.cmd}d" successful.` }, error: false
                         })
@@ -255,7 +255,7 @@ async function alterStatus(req, res) {
     } else {
         return res.send({
             data: { 
-                msg: "samaitan not recognized"
+                msg: "samaritan not recognized"
             },
 
             error: true
@@ -264,8 +264,8 @@ async function alterStatus(req, res) {
 }
 
 
-// enable or disable a samaitan
-async function describesamaitan(req, res) {
+// enable or disable a samaritan
+async function describeSamaritan(req, res) {
     const auth = isAuth(req.nonce);
     if (auth.is_auth) {
         // return did
@@ -279,7 +279,7 @@ async function describesamaitan(req, res) {
     } else {
         return res.send({
             data: { 
-                msg: "samaitan not recognized"
+                msg: "samaritan not recognized"
             },
 
             error: true
@@ -312,7 +312,7 @@ async function refreshSession(req, res) {
     } else {
         return res.send({
             data: { 
-                msg: "samaitan not recognized"
+                msg: "samaritan not recognized"
             },
 
             error: true
@@ -341,7 +341,7 @@ async function cleanSession(req, res) {
     } else {
         return res.send({
             data: { 
-                msg: "samaitan not recognized"
+                msg: "samaritan not recognized"
             },
 
             error: true
@@ -363,27 +363,27 @@ function isAuth(nonce) {
     return { is_auth, did };
 }
 
-// add a samaitan to trust quorum
-async function trustsamaitan(req, res) {
+// add a samaritan to trust quorum
+async function trustSamaritan(req, res) {
     const auth = isAuth(req.nonce);
     if (auth.is_auth) {
-        // make sure samaitan is not trustin itseld
+        // make sure samaritan is not trustin itseld
         if (req.did != auth.did) {
-            const transfer = api.tx.samaitan.updateQuorum(auth.did, req.did);
+            const transfer = api.tx.samaritan.updateQuorum(auth.did, req.did);
             const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
                 if (status.isInBlock) {
                     events.forEach(({ event: { data, method, section }, phase }) => {
-                        // check for errors
+                        /// check for errors
                         if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
                             let error = data.toHuman().dispatchError.Module.error == "0x08000000"
-                                ?   `quorum already filled up` : `'${req.did}' exists in quorum already`;
+                            ?   `quorum already filled up` : `'${req.did}' exists in quorum already`;
                         
                             return res.send({
                                 data: { msg: error }, error: true
                             })
                         } 
 
-                        if (section.match("samaitan", "i")) {
+                        if (section.match("samaritan", "i")) {
                             return res.send({
                                 data: { msg: `quorum update successful.` }, error: false
                             })
@@ -394,7 +394,7 @@ async function trustsamaitan(req, res) {
         } else {
             return res.send({
                 data: { 
-                    msg: "samaitan cannot be in its quorum"
+                    msg: "samaritan cannot be in its quorum"
                 },
     
                 error: true
@@ -403,7 +403,41 @@ async function trustsamaitan(req, res) {
     } else {
         return res.send({
             data: { 
-                msg: "samaitan not recognized"
+                msg: "samaritan not recognized"
+            },
+
+            error: true
+        })
+    }
+}
+
+// list out members of a quorum
+async function listQuorum(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        const transfer = api.tx.samaritan.enumQuorum(auth.did);
+        const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+            if (status.isInBlock) {
+                events.forEach(({ event: { data, method, section }, phase }) => {
+                    // check for errors
+                    if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                        return res.send({
+                            data: { msg: `enumeration of quorum members failed.` }, error: true
+                        })
+                    } 
+
+                    if (section.match("samaritan", "i")) {
+                        return res.send({
+                            data: { list: data.toHuman()[1] }, error: false
+                        })
+                    } 
+                });
+            }
+        });
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
             },
 
             error: true
@@ -423,37 +457,37 @@ app.get('/test', (req, res) => {
     console.log(sam.meta);
 })
 
-// create samaitan
+// create samaritan
 app.post('/new', (req, res) => {
-    createsamaitan(req.body, res);
+    createSamaritan(req.body, res);
 })
 
-// create samaitan
+// create samaritan
 app.post('/init', (req, res) => {
-    initsamaitan(req.body, res);
+    initSamaritan(req.body, res);
 })
 
-// find samaitan
+// find samaritan
 app.post('/find', (req, res) => {
-    findsamaitan(req.body, res);
+    findSamaritan(req.body, res);
 })
 
-// find samaitan
+// find samaritan
 app.post('/rename', (req, res) => {
-    renamesamaitan(req.body, res);
+    renameSamaritan(req.body, res);
 })
 
-// change a samaitans scope
+// change a samaritans scope
 app.post('/change-status', (req, res) => {
     alterStatus(req.body, res);
 })
 
-// get info about samaitan
+// get info about samaritan
 app.post('/describe', (req, res) => {
-    describesamaitan(req.body, res);
+    describeSamaritan(req.body, res);
 })
 
-// get info about samaitan
+// get info about samaritan
 app.post('/refresh', (req, res) => {
     refreshSession(req.body, res);
 })
@@ -465,8 +499,14 @@ app.post('/exit', (req, res) => {
 
 // add to quorum
 app.post('/trust', (req, res) => {
-    trustsamaitan(req.body, res);
+    trustSamaritan(req.body, res);
 })
+
+// list out members of a quorum
+app.post('/enum-quorum', (req, res) => {
+    listQuorum(req.body, res);
+})
+
 
 // listen on port 3000
 app.listen(port, () => console.info(`Listening on port ${port}`));

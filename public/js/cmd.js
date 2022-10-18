@@ -17,7 +17,7 @@
 							this.echo(`desc                gives you information about your Samaritan`);
 							this.echo(`refresh				refreshes terminal connection`);
 							this.echo(`exit                ends your terminal session`);
-							this.echo(`trust <DID>			adds DID to your trust quorum. 2/3 of your quorum carry the same power as your samaritan`);
+							this.echo(`trust <DID>			adds DID to your trust quorum. 2/3 of your quorum can help retrieve your samaritan`);
 							this.echo(`help                informs you about the samaritan terminal`);
 							this.echo(`rotate				rotates your samritan keys and presents you with a new mnemonic`);
 							this.echo(`quorum				lists out all the samaritans in your trust quorum`);
@@ -129,7 +129,7 @@
 									// check did format
 									if (arg2.indexOf("did:sam:root:") == -1) {
 										this.echo(`fatal: invalid DID format`);
-										this.echo(`expected DID format: did:sam:root:<address>"`);
+										this.echo(`expected DID format: did:sam:root:<address>`);
 									} else {
 										this.echo(`querying network...`);
 										this.pause();
@@ -383,12 +383,96 @@
 									// check did format
 									if (arg2.indexOf("did:sam:root:") == -1) {
 										this.echo(`fatal: invalid DID format`);
-										this.echo(`expected DID format: did:sam:root:<address>"`);
+										this.echo(`expected DID format: did:sam:root:<address>`);
 									} else {
 										this.echo(`setting up...`);
 										this.pause();
 
 										fetch ("/trust", {
+											method: 'post',
+											headers: {
+												'Content-Type': 'application/json'
+											},
+											body: JSON.stringify({
+												"did": arg2,
+												"nonce": getNonce()
+											})
+										})
+										.then(res => {
+											(async function () {
+												await res.json().then(res => {
+													main.resume();
+													
+													if (res.error) 
+														main.echo(`fatal: ${res.data.msg}`);
+													else 
+														main.echo(`${res.data.msg}`);
+													
+												});
+											})();  
+										})
+									}
+								}
+							}
+
+							break;
+
+						case "quorum":
+							if (!inSession()) {
+								main.echo(`fatal: no samaritan initialized. See 'sam help'`)
+							} else {
+								this.echo(`getting ready to list quorum members...`);
+								this.pause();
+
+								fetch ("/enum-quorum", {
+									method: 'post',
+									headers: {
+										'Content-Type': 'application/json'
+									},
+									body: JSON.stringify({
+										"nonce": getNonce()
+									})
+								})
+								.then(res => {
+									(async function () {
+										await res.json().then(res => {
+											main.resume();
+											
+											if (res.error) 
+												main.echo(`fatal: ${res.data.msg}`);
+											else {
+												main.echo(`DID list:`)
+												for (var i = 0; i < res.data.list.length; i++) 
+													if (res.data.list[i].indexOf("did:sam:root") != -1)
+														main.echo(`      ${res.data.list[i+1]} - ${res.data.list[i]}`)
+												main.echo(`${res.data.list.length / 2} members retrieved.`)
+											}
+											
+										});
+									})();  
+								})
+							}
+
+							break;
+
+						case "revoke":
+							if (!inSession()) {
+								main.echo(`fatal: no samaritan initialized. See 'sam help'`)
+							} else {
+								// check argument conformance
+								if (!arg2) {
+									this.echo(`fatal: you must provide a DID`);
+									this.echo(`usage: sam revoke <DID>`);
+								} else {
+									// check did format
+									if (arg2.indexOf("did:sam:root:") == -1) {
+										this.echo(`fatal: invalid DID format`);
+										this.echo(`expected DID format: did:sam:root:<address>`);
+									} else {
+										this.echo(`setting up...`);
+										this.pause();
+
+										fetch ("/revoke", {
 											method: 'post',
 											headers: {
 												'Content-Type': 'application/json'
