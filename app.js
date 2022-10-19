@@ -71,7 +71,7 @@ async function createSamaritan(req, res) {
     const hash_key = blake2AsHex(mnemonic);
 
     // use `keyringX` for storing session data
-    keyringX.saveAddress(sam.address, { nonce, did: DID });
+    keyringX.saveAddress(sam.address, { nonce, did: DID, hashkey: hash_key });
 
     // record event onchain
     const transfer = api.tx.samaritan.createSamaritan(req.name, DID, hash_key);
@@ -162,7 +162,7 @@ async function initSamaritan(req, res) {
     
                     if (section.match("samaritan", "i")) {
                         // create session by adding it to keyring
-                        keyringX.saveAddress(sam.address, { nonce, did: data.toHuman()[0] });
+                        keyringX.saveAddress(sam.address, { nonce, did: data.toHuman()[0], hashkey: sig });
 
                         // went through
                         return res.send({
@@ -352,15 +352,16 @@ async function cleanSession(req, res) {
 // check keyring and test for equality
 function isAuth(nonce) {
     var is_auth = false;
-    var did = "";
+    var did = hk = "";
     [].forEach.call(keyringX.getAddresses(), (addr) => {
         if (addr.meta.nonce == nonce) {
             is_auth = true;
             did = addr.meta.did;
+            hk = addr.meta.hashkey;
         }
     });
 
-    return { is_auth, did };
+    return { is_auth, did, hk };
 }
 
 // add a samaritan to trust quorum
@@ -505,7 +506,7 @@ async function rotateKeys(req, res) {
         let hash = util.encryptData(hash_key, doc);
 
         // first change the samaritans auth signature
-        const transfer = api.tx.samaritan.mutateSig(auth.did, hash_key);
+        const transfer = api.tx.samaritan.mutateSig(auth.did, auth.hk, hash_key);
         const hx = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
             if (status.isInBlock) {
                 events.forEach(({ event: { data, method, section }, phase }) => {
