@@ -99,7 +99,7 @@ async function createDIDDocument(res, did, mnemonic, hash_key, nonce) {
     let doc = net.createDIDDoc(did, mnemonic);
 
     // create hash link
-    let hash = util.encryptData(util.Utf8ArrayToStr(hash_key), doc);
+    let hash = util.encryptData(hash_key, doc);
 
     // upload to d-Storage
     (async function () {
@@ -445,6 +445,127 @@ async function listQuorum(req, res) {
     }
 }
 
+// removes a samaritan from a trust quorum
+async function filterQuorum(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        // make sure samaritan is not trustin itseld
+        if (req.did != auth.did) {
+            const transfer = api.tx.samaritan.filterQuorum(auth.did, req.did);
+            const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+                if (status.isInBlock) {
+                    events.forEach(({ event: { data, method, section }, phase }) => {
+                        /// check for errors
+                        if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                            return res.send({
+                                data: { msg: `could not remove '${req.did} from quorum.` }, error: true
+                            })
+                        } 
+
+                        if (section.match("samaritan", "i")) {
+                            return res.send({
+                                data: { msg: `quorum filter successful.` }, error: false
+                            })
+                        } 
+                    });
+                }
+            });
+        } else {
+            return res.send({
+                data: { 
+                    msg: "samaritan cannot be in its quorum"
+                },
+    
+                error: true
+            })
+        }
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+
+            error: true
+        })
+    }
+}
+
+// rotate keys (a security measure)
+async function rotateKeys(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        // generate new mnemonic & hashkey
+        const mnemonic = mnemonicGenerate();
+        const hash_key = blake2AsHex(mnemonic);
+
+        // generate new DID document
+        let doc = net.createDIDDoc(auth.did, mnemonic);
+
+        // create hash link
+        let hash = util.encryptData(hash_key, doc);
+
+        // first change the samaritans auth signature
+        const transfer = api.tx.samaritan.mutateSig(auth.did, hash_key);
+        const hx = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+            if (status.isInBlock) {
+                events.forEach(({ event: { data, method, section }, phase }) => {
+                    /// check for errors
+                    if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                        return res.send({
+                            data: { msg: "could not complete rotation" }, error: true
+                        })
+                    } 
+
+                    if (section.match("samaritan", "i")) {
+                        // upload to d-Storage
+                        (async function () {
+                            // commit to IPFS
+                            await net.uploadToStorage(hash).then(ipfs => {
+                                let cid = ipfs.cid;
+
+                                // send the CID onchain to record the creation of the DID document
+                                (async function () {
+                                    const tx = api.tx.samaritan.acknowledgeDoc(auth.did, cid, hash);
+                                    const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+                                        if (status.isInBlock) {
+                                            events.forEach(({ event: { data, method, section }, phase }) => {
+                                                if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                                                    return res.send({
+                                                        data: { msg: "could not complete rotation" }, error: true
+                                                    })
+                                                } 
+                                
+                                                if (section.match("samaritan", "i")) {
+                                                    return res.send({
+                                                        data: {
+                                                            seed: mnemonic,
+                                                            did: did,
+                                                            nonce:  nonce,
+                                                        }, 
+                                                        error: false
+                                                    })
+                                                } 
+                                            });
+                                        }
+                                    })
+                                }())
+                            })
+                        }())
+                    }
+                })
+            }
+        })
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+
+            error: true
+        })
+    }
+}
+
 app.get('', (req, res) => {
     res.render('terminal', { text: 'This is EJS' })
 })
@@ -507,6 +628,15 @@ app.post('/enum-quorum', (req, res) => {
     listQuorum(req.body, res);
 })
 
+// remove a Samaritan from of a quorum
+app.post('/revoke', (req, res) => {
+    filterQuorum(req.body, res);
+})
+
+// rotate Samaritan keys
+app.post('/revoke', (req, res) => {
+    rotateKeys(req.body, res);
+})
 
 // listen on port 3000
 app.listen(port, () => console.info(`Listening on port ${port}`));

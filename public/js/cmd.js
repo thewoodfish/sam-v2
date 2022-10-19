@@ -83,7 +83,7 @@
 								} else {
 									// clear seeds
 									this.clear();
-									this.echo(`initializing your samaritan...`);
+									this.echo(`initializing samaritan...`);
 									this.pause();
 
 									fetch ("/init", {
@@ -469,7 +469,7 @@
 										this.echo(`fatal: invalid DID format`);
 										this.echo(`expected DID format: did:sam:root:<address>`);
 									} else {
-										this.echo(`setting up...`);
+										this.echo(`processing...`);
 										this.pause();
 
 										fetch ("/revoke", {
@@ -497,6 +497,46 @@
 										})
 									}
 								}
+							}
+
+							break;
+
+						case "rotate":
+							if (!inSession()) {
+								main.echo(`fatal: no samaritan initialized. See 'sam help'`)
+							} else {
+								this.echo(`trying to rotate keys...`);
+								setTimeout(main.echo("assigning new mnemonics..."), 7000);
+
+								this.pause();
+
+								fetch ("/rotate", {
+									method: 'post',
+									headers: {
+										'Content-Type': 'application/json'
+									},
+									body: JSON.stringify({
+										"nonce": getNonce()
+									})
+								})
+								.then(res => {
+									(async function () {
+										await res.json().then(res => {
+											main.resume();
+											
+											if (res.error) 
+												main.echo(`fatal: ${res.data.msg}`);
+											else {
+												main.echo(`DID list:`)
+												for (var i = 0; i < res.data.list.length; i++) 
+													if (res.data.list[i].indexOf("did:sam:root") != -1)
+														main.echo(`      ${res.data.list[i+1]} - ${res.data.list[i]}`)
+												main.echo(`${res.data.list.length / 2} members retrieved.`)
+											}
+											
+										});
+									})();  
+								})
 							}
 
 							break;
