@@ -352,7 +352,7 @@ async function cleanSession(req, res) {
 // check keyring and test for equality
 function isAuth(nonce) {
     var is_auth = false;
-    var did = hk = "";
+    var did, hk = "";
     [].forEach.call(keyringX.getAddresses(), (addr) => {
         if (addr.meta.nonce == nonce) {
             is_auth = true;
@@ -506,7 +506,7 @@ async function rotateKeys(req, res) {
         let hash = util.encryptData(hash_key, doc);
 
         // first change the samaritans auth signature
-        const transfer = api.tx.samaritan.mutateSig(auth.did, auth.hk, hash_key);
+        const transfer = api.tx.samaritan.changeSig(auth.hk, hash_key);
         const hx = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
             if (status.isInBlock) {
                 events.forEach(({ event: { data, method, section }, phase }) => {
@@ -540,8 +540,6 @@ async function rotateKeys(req, res) {
                                                     return res.send({
                                                         data: {
                                                             seed: mnemonic,
-                                                            did: did,
-                                                            nonce:  nonce,
                                                         }, 
                                                         error: false
                                                     })
@@ -565,6 +563,11 @@ async function rotateKeys(req, res) {
             error: true
         })
     }
+}
+
+// vote on a memorandum
+async function voteMemo(req, res) {
+    
 }
 
 app.get('', (req, res) => {
@@ -635,8 +638,13 @@ app.post('/revoke', (req, res) => {
 })
 
 // rotate Samaritan keys
-app.post('/revoke', (req, res) => {
+app.post('/rotate', (req, res) => {
     rotateKeys(req.body, res);
+})
+
+// vote on a memo
+app.post('/vote', (req, res) => {
+    voteMemo(req.body, res);
 })
 
 // listen on port 3000
