@@ -22,6 +22,7 @@
 							this.echo(`rotate				rotates your samritan keys and presents you with a new mnemonic`);
 							this.echo(`quorum				lists out all the samaritans in your trust quorum`);
 							this.echo(`revoke <DID>        removes a samaritan from your trust quorum`);
+							this.echo(`pull <link>         fetches a JSON credential and adds it to the network`);
 							break;
 						
 						case "new":
@@ -127,7 +128,7 @@
 									this.echo(`usage: sam find <DID>`);
 								} else {
 									// check did format
-									if (arg2.indexOf("did:sam:root:") == -1) {
+									if (!isDID(arg2)) {
 										this.echo(`fatal: invalid DID format`);
 										this.echo(`expected DID format: did:sam:root:<address>`);
 									} else {
@@ -381,7 +382,7 @@
 									this.echo(`usage: sam trust <DID>`);
 								} else {
 									// check did format
-									if (arg2.indexOf("did:sam:root:") == -1) {
+									if (!isDID(arg2)) {
 										this.echo(`fatal: invalid DID format`);
 										this.echo(`expected DID format: did:sam:root:<address>`);
 									} else {
@@ -465,7 +466,7 @@
 									this.echo(`usage: sam revoke <DID>`);
 								} else {
 									// check did format
-									if (arg2.indexOf("did:sam:root:") == -1) {
+									if (!isDID(arg2)) {
 										this.echo(`fatal: invalid DID format`);
 										this.echo(`expected DID format: did:sam:root:<address>`);
 									} else {
@@ -541,6 +542,51 @@
 
 							break;
 
+						case "pull":
+							if (!inSession()) {
+								main.echo(`fatal: no samaritan initialized. See 'sam help'`)
+							} else {
+								// check argument conformance
+								if (!arg2) {
+									this.echo(`fatal: you must provide a link to a JSON file`);
+									this.echo(`usage: sam pull <link>`);
+								} else {
+									// check did format
+									if (!isJsonLink(arg2)) {
+										this.echo(`fatal: invalid link specified`);
+									} else {
+										this.echo(`processing...`);
+										this.pause();
+
+										fetch ("/pull", {
+											method: 'post',
+											headers: {
+												'Content-Type': 'application/json'
+											},
+											body: JSON.stringify({
+												"link": arg2,
+												"nonce": getNonce()
+											})
+										})
+										.then(res => {
+											(async function () {
+												await res.json().then(res => {
+													main.resume();
+													
+													if (res.error) 
+														main.echo(`fatal: ${res.data.msg}`);
+													else 
+														main.echo(`${res.data.msg}`);
+													
+												});
+											})();  
+										})
+									}
+								}
+							}
+
+							break;
+
 						default:
 							this.echo(`sam: '${arg1}' is not a samaritan command. See 'sam help'.`);
 					}
@@ -586,4 +632,18 @@
 
 		function getNonce() {
 			return sessionStorage.getItem("nonce");
+		}
+
+		function isDID(str) {
+			if (str.indexOf("did:sam:root") == -1) 
+				return false;
+			
+			return true;
+		}
+
+		function isJSONLink(str) {
+			if (str.indexOf("http") == -1 || str.indexOf(".json") == -1) 
+				return false;
+		
+			return true;
 		}

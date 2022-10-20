@@ -553,7 +553,7 @@ async function rotateKeys(req, res) {
                     }
                 })
             }
-        })
+        }) 
     } else {
         return res.send({
             data: { 
@@ -645,6 +645,11 @@ app.post('/rotate', (req, res) => {
 // vote on a memo
 app.post('/vote', (req, res) => {
     voteMemo(req.body, res);
+})
+
+// pull and parse credential from the net
+app.post('/pull', (req, res) => {
+    pullCredential(req.body, res);
 })
 
 // listen on port 3000
