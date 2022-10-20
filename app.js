@@ -25,7 +25,7 @@ app.use('/img', express.static(__dirname + 'public/img'));
 // set views
 app.set('views', './views');
 app.set('view engine', 'ejs')
-
+ 
 // utility functions
 const util = require("./utility.cjs");
 import * as net from "./network.js";
