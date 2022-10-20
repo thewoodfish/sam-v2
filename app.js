@@ -567,7 +567,27 @@ async function rotateKeys(req, res) {
 
 // vote on a memorandum
 async function voteMemo(req, res) {
-    
+    const link = "public/docs/data.txt";
+    const file = fs.createWriteStream(req.url);
+
+    https.get(url, response => {
+        var stream = response.pipe(file);
+
+        stream.on("finish", function() {
+            // get JSON content
+            fs.readFile(link, 'utf8', function (err, data) {
+                if (err) 
+                    return console.log(err);
+
+                console.log(JSON.parse(JSON.stringify(data)));
+              });
+        });
+    });
+}
+
+// pull and create a credential
+async function pullCredential(req, res) {
+
 }
 
 app.get('', (req, res) => {

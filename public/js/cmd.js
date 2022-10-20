@@ -548,12 +548,12 @@
 							} else {
 								// check argument conformance
 								if (!arg2) {
-									this.echo(`fatal: you must provide a link to a JSON file`);
+									this.echo(`fatal: you must provide a URL to a JSON file`);
 									this.echo(`usage: sam pull <link>`);
 								} else {
 									// check did format
-									if (!isJsonLink(arg2)) {
-										this.echo(`fatal: invalid link specified`);
+									if (!isJSONLink(arg2)) {
+										this.echo(`fatal: invalid URL specified`);
 									} else {
 										this.echo(`processing...`);
 										this.pause();
@@ -564,7 +564,7 @@
 												'Content-Type': 'application/json'
 											},
 											body: JSON.stringify({
-												"link": arg2,
+												"url": arg2,
 												"nonce": getNonce()
 											})
 										})
