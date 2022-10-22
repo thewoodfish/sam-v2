@@ -1,2 +1,1 @@
-This is the second wave of Samaritan development. Still Beta. This would include a DID specification among other things not added in the first wave.
-Thank you!
+This repo contains the backend code supporting SamaritanOS. For more info, see https://github.com/thewoodfish/SamaritanOS
