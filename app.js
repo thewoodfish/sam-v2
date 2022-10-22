@@ -36,7 +36,6 @@ import { mnemonicGenerate, cryptoWaitReady, blake2AsHex } from '@polkadot/util-c
 const { Keyring } = require('@polkadot/keyring');
 import keyringX from '@polkadot/ui-keyring';
 import {  } from '@polkadot/util-crypto';
-import { platform } from "os";
 
 
 // global
@@ -71,7 +70,7 @@ async function createSamaritan(req, res) {
     const hash_key = blake2AsHex(mnemonic);
 
     // use `keyringX` for storing session data
-    keyringX.saveAddress(sam.address, { nonce, did: DID, hashkey: hash_key });
+    keyringX.saveAddress(sam.address, { nonce, did: DID, hashkey: hash_key, pair: sam });
 
     // record event onchain
     const transfer = api.tx.samaritan.createSamaritan(req.name, DID, hash_key);
@@ -99,7 +98,7 @@ async function createDIDDocument(res, did, mnemonic, hash_key, nonce) {
     let doc = net.createDIDDoc(did, mnemonic);
 
     // create hash link
-    let hash = util.encryptData(hash_key, doc);
+    let hash = util.encryptData(BOLD_TEXT, doc);
 
     // upload to d-Storage
     (async function () {
@@ -162,7 +161,7 @@ async function initSamaritan(req, res) {
     
                     if (section.match("samaritan", "i")) {
                         // create session by adding it to keyring
-                        keyringX.saveAddress(sam.address, { nonce, did: data.toHuman()[0], hashkey: sig });
+                        keyringX.saveAddress(sam.address, { nonce, did: data.toHuman()[0], hashkey: sig, pair: sam });
 
                         // went through
                         return res.send({
@@ -295,9 +294,9 @@ async function refreshSession(req, res) {
         [].forEach.call(keyringX.getAddresses(), (addr) => {
             if (addr.meta.nonce == req.nonce) {
                 nonce = blake2AsHex(mnemonicGenerate().replace(" ", ""));
-                
+
                 // update
-                keyringX.saveAddress(addr.address, { nonce, did: auth.did });
+                keyringX.saveAddress(addr.address, { nonce, did: auth.did, hashkey: addr.meta.hashkey, pair: addr.meta.pair });
             }
         });
     
@@ -353,15 +352,17 @@ async function cleanSession(req, res) {
 function isAuth(nonce) {
     var is_auth = false;
     var did, hk = "";
+    var pair;
     [].forEach.call(keyringX.getAddresses(), (addr) => {
         if (addr.meta.nonce == nonce) {
             is_auth = true;
             did = addr.meta.did;
             hk = addr.meta.hashkey;
+            pair = addr.meta.pair;
         }
     });
 
-    return { is_auth, did, hk };
+    return { is_auth, did, hk, pair };
 }
 
 // add a samaritan to trust quorum
@@ -567,27 +568,125 @@ async function rotateKeys(req, res) {
 
 // vote on a memorandum
 async function voteMemo(req, res) {
-    const link = "public/docs/data.txt";
-    const file = fs.createWriteStream(req.url);
 
-    https.get(url, response => {
-        var stream = response.pipe(file);
-
-        stream.on("finish", function() {
-            // get JSON content
-            fs.readFile(link, 'utf8', function (err, data) {
-                if (err) 
-                    return console.log(err);
-
-                console.log(JSON.parse(JSON.stringify(data)));
-              });
-        });
-    });
 }
 
-// pull and create a credential
+// pull a credential 
 async function pullCredential(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        try {
+            const link = "public/docs/data.txt";
+            const file = fs.createWriteStream(link);
+        
+            https.get(req.url, response => {
+                var stream = response.pipe(file);
+        
+                stream.on("finish", function() {
+                    // get JSON content
+                    fs.readFile(link, 'utf8', function (err, data) {
+                        if (err || util.isJSONSyntaxError(data)) 
+                            throw(err);
+        
+                        let cred = JSON.stringify(data);
+                        initCredential(cred, auth, res);
+                      });
+                });
+            });
+        } catch (e) {
+            return res.send({
+                data: { 
+                    msg: "process could not be completed."
+                },
+    
+                error: true
+            })
+        }
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
 
+            error: true
+        })
+    }
+}
+
+// create verifiable credential
+async function initCredential(raw_cred, auth, res) {
+    // get the VC nonce and index from network
+    const transfer = api.tx.samaritan.getIndexes(auth.did);
+    const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+        if (status.isInBlock) {
+            events.forEach(({ event: { data, method, section }, phase }) => {
+                /// check for errors
+                if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                    return res.send({
+                        data: { msg: "process could not be completed." }, error: true
+                    })
+                } 
+
+                if (section.match("samaritan", "i")) {
+                    let index = data.toHuman();
+                    let rcred = JSON.parse(raw_cred);
+                    let cred = net.createCredential(raw_cred, auth.did, index);
+
+                    // construct address
+                    let addr = `${cred["id"]}/r/vc/${index[1]}/n${index[0]}-i${index[2]}`;
+
+                    // sign credential
+                    let scred = net.signCredential(auth.pair, cred);
+                    let hash = "";
+
+                    // is it public?
+                    if (rcred.public) {
+                        // encrypt with general key
+                        hash = util.encryptData(BOLD_TEXT, JSON.stringify(scred));
+                    } else { // encrypt such that only owner can read it
+                        // sign something
+                        let sig = auth.pair.sign(BOLD_TEXT);
+                        hash = util.encryptData(util.uint8ToBase64(sig), JSON.stringify(scred));
+                    }
+
+                    let desc = util.encryptData(BOLD_TEXT, rcred.desc.substr(0, 500));
+
+                    // save to storage
+                    (async function () {
+                        // commit to IPFS
+                        await net.uploadToStorage(hash).then(ipfs => {
+                            let cid = ipfs.cid;
+                            
+                            // send the CID onchain to record the creation of the credential
+                            (async function () {
+                                const tx = api.tx.samaritan.recordCredential(auth.did, rcred.id, cid, hash, rcred.scope, desc, addr);
+                                const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+                                    if (status.isInBlock) {
+                                        events.forEach(({ event: { data, method, section }, phase }) => {
+                                            if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                                                return res.send({
+                                                    data: { msg: "could not create samaritan" }, error: true
+                                                })
+                                            } 
+                            
+                                            if (section.match("samaritan", "i")) {
+                                                return res.send({
+                                                    data: {
+                                                        addr: data.toHuman()[1]
+                                                    }, 
+                                                    error: false
+                                                })
+                                            } 
+                                        });
+                                    }
+                                });
+                            }())
+                        })
+                    })()
+                } 
+            });
+        }
+    });
 }
 
 app.get('', (req, res) => {

@@ -528,11 +528,13 @@
 											if (res.error) 
 												main.echo(`fatal: ${res.data.msg}`);
 											else {
-												main.echo(`DID list:`)
-												for (var i = 0; i < res.data.list.length; i++) 
-													if (res.data.list[i].indexOf("did:sam:root") != -1)
-														main.echo(`      ${res.data.list[i+1]} - ${res.data.list[i]}`)
-												main.echo(`${res.data.list.length / 2} members retrieved.`)
+												main.echo(`Keys:    ${res.data.seed} ([[b;red;] You have 30 seconds to copy them.])`);
+
+												main.pause();
+												setTimeout(() => {
+													main.update(-1, "Keys:    ****************************************************************************************************");
+													main.echo("rotation sucessful.").resume();
+												}, 30000);
 											}
 											
 										});
@@ -575,9 +577,10 @@
 													
 													if (res.error) 
 														main.echo(`fatal: ${res.data.msg}`);
-													else 
-														main.echo(`${res.data.msg}`);
-													
+													else {
+														main.echo(`address:   ${res.data.addr}`);
+														main.echo(`Credential added to network.`);
+													}
 												});
 											})();  
 										})
@@ -642,7 +645,7 @@
 		}
 
 		function isJSONLink(str) {
-			if (str.indexOf("http") == -1 || str.indexOf(".json") == -1) 
+			if (str.indexOf("http") == -1 || !str.endsWith(".json")) 
 				return false;
 		
 			return true;

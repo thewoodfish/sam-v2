@@ -107,3 +107,51 @@ export async function getFromIPFS(cid) {
 
     return bufferedContents;
 }
+
+// create a Verfifiable Credential
+export function createCredential(cred_str, did, index) {
+    const cred = JSON.parse(cred_str);
+
+    return {
+        "@context": [
+            "https://www.w3.org/2018/credentials/v1",
+            "https://www.sam.org/2022/credentials/v1",
+            ...cred["context"]
+        ],
+        "id": `${cred["id"]}/r/vc/${index[1]}/n${index[0]}-i${index[2]}`,
+        "type": [
+            "VerifiableCredential",
+            "SamaritanCredential"
+        ],
+        "issuer": did,
+        "issuanceDate": util.getXMLDate(),
+        "credentialSubject": cred["cred"],
+    }
+}
+
+// sign a credential 
+export function signCredential(pair, cred) {
+    // sign credential
+    let sig = pair.sign(JSON.stringify(cred));
+    let ncred = cred;
+
+    let proof = {
+        "type": "Ed25519VerificationKey",
+        "created": util.getXMLDate(),
+        "verificationMethod": `${did}#key-1`, // assertionMethod is `key-1` by default
+        "proofPurpose": "assertionMethod",
+        "proofValue": util.uint8ToBase64(sig)
+    };
+
+    // no need to retrieve assertion method of DID document since we could just cook it up correctly here
+    cred["proof"] 
+        ? ncred["proof"] = [
+            proof,
+            ...cred['proof']
+        ]
+        : ncred["proof"] = [
+            proof
+        ]
+
+    return ncred;
+}

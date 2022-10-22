@@ -123,6 +123,18 @@ function decryptData(key, cipher) {
     return crypto.AES.decrypt(cipher, key).toString(crypto.enc.Utf8);
 }
 
+// // check if there is a syntax error in JSON fetched
+// function isJSONSyntaxError(str) {
+//     const json = JSON.parse(JSON.stringify(str));
+
+//     // first check that all fields exist
+//     if (!json["context"] || !json["id"] || !json["cred"] || !json["desc"] || !json["scope"])
+//         return true;
+
+    
+
+// }
+
 const uint8ToBase64 = (arr) => Buffer.from(arr).toString('base64');
 
 module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate, splitArray, uint8ToBase64, decryptData, encryptData, extractIDs, parseVCURL };
