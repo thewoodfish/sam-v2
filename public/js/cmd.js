@@ -22,7 +22,7 @@
 							this.echo(`rotate				rotates your samritan keys and presents you with a new mnemonic`);
 							this.echo(`quorum				lists out all the samaritans in your trust quorum`);
 							this.echo(`revoke <DID>        removes a samaritan from your trust quorum`);
-							this.echo(`pull <link>         fetches a JSON credential and adds it to the network`);
+							// this.echo(`pull <link>         fetches a JSON credential and adds it to the network`);
 							break;
 						
 						case "new":
@@ -544,51 +544,51 @@
 
 							break;
 
-						case "pull":
-							if (!inSession()) {
-								main.echo(`fatal: no samaritan initialized. See 'sam help'`)
-							} else {
-								// check argument conformance
-								if (!arg2) {
-									this.echo(`fatal: you must provide a URL to a JSON file`);
-									this.echo(`usage: sam pull <link>`);
-								} else {
-									// check did format
-									if (!isJSONLink(arg2)) {
-										this.echo(`fatal: invalid URL specified`);
-									} else {
-										this.echo(`processing...`);
-										this.pause();
+						// case "pull":
+						// 	if (!inSession()) {
+						// 		main.echo(`fatal: no samaritan initialized. See 'sam help'`)
+						// 	} else {
+						// 		// check argument conformance
+						// 		if (!arg2) {
+						// 			this.echo(`fatal: you must provide a URL to a JSON file`);
+						// 			this.echo(`usage: sam pull <link>`);
+						// 		} else {
+						// 			// check did format
+						// 			if (!isJSONLink(arg2)) {
+						// 				this.echo(`fatal: invalid URL specified`);
+						// 			} else {
+						// 				this.echo(`processing...`);
+						// 				this.pause();
 
-										fetch ("/pull", {
-											method: 'post',
-											headers: {
-												'Content-Type': 'application/json'
-											},
-											body: JSON.stringify({
-												"url": arg2,
-												"nonce": getNonce()
-											})
-										})
-										.then(res => {
-											(async function () {
-												await res.json().then(res => {
-													main.resume();
+						// 				fetch ("/pull", {
+						// 					method: 'post',
+						// 					headers: {
+						// 						'Content-Type': 'application/json'
+						// 					},
+						// 					body: JSON.stringify({
+						// 						"url": arg2,
+						// 						"nonce": getNonce()
+						// 					})
+						// 				})
+						// 				.then(res => {
+						// 					(async function () {
+						// 						await res.json().then(res => {
+						// 							main.resume();
 													
-													if (res.error) 
-														main.echo(`fatal: ${res.data.msg}`);
-													else {
-														main.echo(`address:   ${res.data.addr}`);
-														main.echo(`Credential added to network.`);
-													}
-												});
-											})();  
-										})
-									}
-								}
-							}
+						// 							if (res.error) 
+						// 								main.echo(`fatal: ${res.data.msg}`);
+						// 							else {
+						// 								main.echo(`address:   ${res.data.addr}`);
+						// 								main.echo(`Credential added to network.`);
+						// 							}
+						// 						});
+						// 					})();  
+						// 				})
+						// 			}
+						// 		}
+						// 	}
 
-							break;
+						// 	break;
 
 						default:
 							this.echo(`sam: '${arg1}' is not a samaritan command. See 'sam help'.`);
