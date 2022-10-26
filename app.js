@@ -13,8 +13,17 @@ const app = express();
 const port = 3000;
 const fs = require('fs');
 const https = require("https");
+const bodyParser = require('body-parser');
 
-app.use(express.json());
+// formidable form handler
+const formidable = require('formidable');
+const uploadFolder = "public/files/";
+
+formidable.multiples = true;
+formidable.maxFileSize = 50 * 1024 * 1024; // 5MB
+formidable.uploadDir = uploadFolder;
+
+// app.use(express.json());
 
 // static files
 app.use(express.static('public'));
@@ -47,6 +56,7 @@ const BOLD_TEXT = "Sacha is a great buddy!";
 const keyring = new Keyring({ type: 'sr25519' });
 
 const alice = keyring.addFromUri('//Alice');
+const storage_providers  = ["crust network"];
 
 cryptoWaitReady().then(() => {
     // load all available addresses and accounts
@@ -65,6 +75,9 @@ async function createSamaritan(req, res) {
     keyring.setSS58Format(0);
     const DID = net.createRootDID(sam.address);
 
+    // random provider
+    const provider = storage_providers[Math.floor(Math.random() * storage_providers.length)];
+
     // sign communication nonce
     const nonce = blake2AsHex(mnemonicGenerate().replace(" ", ""));
     const hash_key = blake2AsHex(mnemonic);
@@ -73,7 +86,7 @@ async function createSamaritan(req, res) {
     keyringX.saveAddress(sam.address, { nonce, did: DID, hashkey: hash_key, pair: sam });
 
     // record event onchain
-    const transfer = api.tx.samaritan.createSamaritan(req.name, DID, hash_key);
+    const transfer = api.tx.samaritan.createSamaritan(req.name, DID, hash_key, provider);
     const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
         if (status.isInBlock) {
             events.forEach(({ event: { data, method, section }, phase }) => {
@@ -86,7 +99,7 @@ async function createSamaritan(req, res) {
 
                 // after samaritan has been recorded, then `really create it` by birthing its DID document
                 if (section.match("samaritan", "i")) {
-                    createDIDDocument(res, DID, mnemonic, hash_key, nonce);
+                    createDIDDocument(res, DID, mnemonic, nonce, provider);
                 } 
             });
         }
@@ -94,7 +107,7 @@ async function createSamaritan(req, res) {
 }
 
 // create the DID document
-async function createDIDDocument(res, did, mnemonic, hash_key, nonce) {
+async function createDIDDocument(res, did, mnemonic, nonce, provider) {
     let doc = net.createDIDDoc(did, mnemonic);
 
     // create hash link
@@ -103,7 +116,7 @@ async function createDIDDocument(res, did, mnemonic, hash_key, nonce) {
     // upload to d-Storage
     (async function () {
         // commit to IPFS
-        await net.uploadToStorage(hash).then(ipfs => {
+        await net.uploadToStorage(provider, hash).then(ipfs => {
             let cid = ipfs.cid;
             
             // send the CID onchain to record the creation of the DID document
@@ -689,7 +702,114 @@ async function initCredential(raw_cred, auth, res) {
     });
 }
 
+// fetch inportant indexes to contruct resource URL
+async function fetchIndexes(type, did, callback) {
+    const transfer = api.tx.samaritan.getIndexes(type, did);
+    const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+        if (status.isInBlock) {
+            events.forEach(({ event: { data, method, section }, phase }) => {
+                /// check for errors
+                if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                    return res.send({
+                        data: { msg: "process could not be completed." }, error: true
+                    })
+                } 
+
+                if (section.match("samaritan", "i")) {
+                    callback(data.toHuman());
+                }
+            })
+        }
+    })
+}
+
+// process the upload of the Samaritans data to the network
+async function processUpload(fields, path, res) {
+    const auth = isAuth(fields.nonce);
+    if (auth.is_auth) {
+        // first fetch upload indexes
+        await fetchIndexes(1, auth.did, function(result) {
+            let url = net.constructURL("r", auth.did, result);
+            
+            // read data and upload to IPFS and the storage pinning network
+            const readStream = fs.createReadStream(path, {});
+            const data = [];
+
+            readStream.on('data', (chunk) => {
+                data.push(chunk);
+            });
+
+            readStream.on('end', () => {
+                let buf = Buffer.concat(data);
+
+                // save to storage
+                (async function () {
+                    // commit to IPFS & pin on storage
+                    await net.uploadToStorage(result[3], buf).then(ipfs => {
+                        let cid = ipfs.cid;
+                        let addr;
+                        let isPublic = true;
+
+                        // scope, scope
+                        if (fields.scope == "public") {
+                            // encrypt with general key
+                            addr = util.encryptData(BOLD_TEXT, cid.toString());
+                        } else { // encrypt such that only owner can parse it
+                            // sign something
+                            let sig = auth.pair.sign(BOLD_TEXT);
+                            addr = util.encryptData(util.uint8ToBase64(sig), cid.toString());
+
+                            isPublic = false;
+                        }
+                        
+                        // record onchain
+                        (async function () {
+                            const tx = api.tx.samaritan.addResource(auth.did, addr, isPublic, fields.name, fields.about);
+                            const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+                                if (status.isInBlock) {
+                                    events.forEach(({ event: { data, method, section }, phase }) => {
+                                        if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                                            return res.send({
+                                                data: { msg: "process could not be completed." }, error: true
+                                            })
+                                        } 
+                        
+                                        if (section.match("samaritan", "i")) {
+                                            return res.send({
+                                                data: {
+                                                    url
+                                                }, 
+                                                error: false
+                                            })
+                                        } 
+                                    });
+                                }
+                            });
+                        }())
+                    })
+                })()
+            })
+        });
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+
+            error: true
+        })
+    }
+}
+
+// request handles 
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }))
+
 app.get('', (req, res) => {
+    res.render('main', {})
+})
+
+app.get('/terminal', (req, res) => {
     res.render('terminal', { text: 'This is EJS' })
 })
 
@@ -769,6 +889,24 @@ app.post('/vote', (req, res) => {
 // pull and parse credential from the net
 app.post('/pull', (req, res) => {
     pullCredential(req.body, res);
+})
+
+// upload Samaritan data to storage
+app.post('/upload', (req, res) => {
+     
+    const form = new formidable.IncomingForm();
+    form.parse(req, function(err, fields, files) {
+  
+        var oldPath = files.file.filepath;
+        var newPath = uploadFolder + '/' + fields.file_name;
+
+        fs.rename(oldPath, newPath, function(err){
+            if (err) console.log(err);
+        });
+
+        // process upload
+        processUpload(fields, newPath, res);
+    })
 })
 
 // listen on port 3000

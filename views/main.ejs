@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <title>Samaritan Portal</title>
+</head>
+<body>
+    <div class="col-md-8 offset-md-2 mt-50">
+        <div class="col-md-12 row">
+            <div class="col-md-4">
+                <span>Samaritan Portal</span>
+            </div>
+            <div class="col-md-8">
+                <div class="i-flex f-right">
+                    <div class="ta-right">
+                        <span class="fs-70"><span class="svc"><span class="svc-amt">0</span> $SVC </span>. <span class="sam-name"></span></span><br>
+                        <span class="fs-70 sam-did">did:sam:root:xxxxxxxxxxxxxxxxxxxxxxx</span>
+                    </div>
+                    <div class="img-con ml-10">
+                        <img src="img/bird.jpeg" class="sam-img">
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-12 mt-30">
+                <div class="bd-example">
+                    <nav>
+                        <div class="nav nav-tabs mb-3" id="nav-tab" role="tablist">
+                            <button class="nav-link active" id="nav-home-tab" data-bs-toggle="tab" data-bs-target="#nav-home" type="button" role="tab" aria-controls="nav-home" aria-selected="true">My Files</button>
+                            <button class="nav-link" id="nav-profile-tab" data-bs-toggle="tab" data-bs-target="#nav-profile" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">Upload</button>
+                            <button class="nav-link" id="nav-contact-tab" data-bs-toggle="tab" data-bs-target="#nav-contact" type="button" role="tab" aria-controls="nav-contact" aria-selected="false">Terminal</button>
+                        </div>
+                        </nav>
+                        <div class="tab-content" id="nav-tabContent">
+                        <div class="tab-pane fade show active" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab">
+                           <div>
+                            <p>To import your Samaritan and take control of this portal, kindly input your seed phrase below</p>
+
+                            <div class="mb-3">
+                                <textarea class="form-control form-control-sm mnemonics" placeholder="bird magic rebel faith ferry..." aria-label="With textarea"></textarea>
+                            </div>
+
+                            <div class="col-12">
+                                <button class="btn btn-primary import-sam" type="submit">init Samaritan</button>
+                            </div>
+                           </div>
+
+                            <div class="mt-50">
+                                <p>Kindly create a new Samaritan below</p>
+    
+                                <div class="mb-3">
+                                    <label  class="form-label">What are you calling your Samaritan?</label>
+                                    <input class="form-control form-control-sm sam-name-0" type="text" aria-label=".form-control-sm example">
+                                </div>
+    
+                                <div class="col-12">
+                                    <button class="btn btn-primary create-sam" type="submit">create new Samaritan</button> 
+                                    <p class="res-keys mt-30"></p>
+                                </div>
+                                </div>
+                            </div>
+                        <div class="tab-pane fade" id="nav-profile" role="tabpanel" aria-labelledby="nav-profile-tab">
+                            <div class="row">
+                                <div class="col-md-6 fs-80">
+                                    <p>Upload your files to the internet. This time, you have all the power and control.</p>
+                                    <div>
+                                        <div class="bd-example">
+                                            <form type="">
+                                                <div class="mb-3">
+                                                    <label  class="form-label">Your file</label>
+                                                    <input type="file" required class="form-control form-control-sm sam-file" name="file" aria-label="Small file input example">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label  class="form-label">What is the scope of this file?</label>
+                                                    <select required class="form-select form-select-sm sam-file-scope" aria-label=".form-select-sm example">
+                                                        <option selected value="public">Public</option>
+                                                        <option value="private">Private</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label  class="form-label">Name of file (optional)</label>
+                                                    <input class="form-control form-control-sm sam-file-name" type="text" aria-label=".form-control-sm example">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label  class="form-label">About file (optional)</label>
+                                                    <textarea class="form-control form-control-sm sam-file-about" aria-label="With textarea"></textarea>
+                                                </div>
+                                                <div class="col-12">
+                                                    <button class="btn btn-primary sam-file-upload-btn" onclick="return false">Upload file</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 logz">
+                                    <p class="fs-70">Logs</p>
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="nav-contact" role="tabpanel" aria-labelledby="nav-contact-tab">
+                            <p><a href="/terminal">Click here</a> to access the terminal</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/ui-control.js"></script>
+</body>
+</html>

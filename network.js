@@ -25,6 +25,7 @@ import * as storg from "./storage.js";
 import { generateKey } from "crypto";
 
 const ipfs = await IPFS.create();
+const HASH_KEY = "j";
 
 // using alice here temporarily
 const alice = keyring.addFromUri('//Alice');
@@ -79,8 +80,8 @@ function generateVM(did, mnemonic, str) {
     }
 }
 
-async function uploadToIPFS(path) {
-    const { cid } = await ipfs.add(path);
+async function uploadToIPFS(data) {
+    const { cid } = await ipfs.add(data);
 
     if (cid) 
         console.log(cid.toV0().toString());
@@ -89,17 +90,19 @@ async function uploadToIPFS(path) {
 
     const fileStat = await ipfs.files.stat(cid);
 
-    return { cid: cid, size: fileStat.cumulativeSize };
+    return { cid, size: fileStat.cumulativeSize };
 }
 
-export async function uploadToStorage(path) {
+export async function uploadToStorage(network, data) {
     // upload to IPFS
-    const { cid, size } = await uploadToIPFS(path);
+    const { cid, size } = await uploadToIPFS(data);
 
     // pin on dStorage
-    // await storg.placeStorageOrder(cid, size);
+    if (network == "crust network") {
+        // await storg.placeStorageOrder(cid, size);
+    }
 
-    return { cid: cid, size: size };
+    return { cid, size };
 }
 
 export async function getFromIPFS(cid) {
@@ -154,4 +157,13 @@ export function signCredential(pair, cred) {
         ]
 
     return ncred;
+}
+
+
+// construct URL for all resources
+export function constructURL(type, did, result) {
+    let hash = util.encryptData(HASH_KEY, `${result[0]}-${result[2]}`);
+    let url = `${did}/${type}/${result[1]}/${hash}`;
+
+    return url;
 }

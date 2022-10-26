@@ -138,3 +138,4 @@ function decryptData(key, cipher) {
 const uint8ToBase64 = (arr) => Buffer.from(arr).toString('base64');
 
 module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate, splitArray, uint8ToBase64, decryptData, encryptData, extractIDs, parseVCURL };
+ 
