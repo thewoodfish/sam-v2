@@ -702,94 +702,201 @@ async function initCredential(raw_cred, auth, res) {
     });
 }
 
-// fetch inportant indexes to contruct resource URL
-async function fetchIndexes(type, did, callback) {
-    const transfer = api.tx.samaritan.getIndexes(type, did);
-    const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
-        if (status.isInBlock) {
-            events.forEach(({ event: { data, method, section }, phase }) => {
-                /// check for errors
-                if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
-                    return res.send({
-                        data: { msg: "process could not be completed." }, error: true
-                    })
-                } 
-
-                if (section.match("samaritan", "i")) {
-                    callback(data.toHuman());
-                }
-            })
-        }
-    })
-}
-
 // process the upload of the Samaritans data to the network
 async function processUpload(fields, path, res) {
     const auth = isAuth(fields.nonce);
     if (auth.is_auth) {
-        // first fetch upload indexes
-        await fetchIndexes(1, auth.did, function(result) {
-            let url = net.constructURL("r", auth.did, result);
-            
-            // read data and upload to IPFS and the storage pinning network
-            const readStream = fs.createReadStream(path, {});
-            const data = [];
+        
+        // create hash from metadata
+        let hash = blake2AsHex(fields.metadata);
+        
+        // read data and upload to IPFS and pin on Crus
+        const readStream = fs.createReadStream(path, {});
+        const data = [];
 
-            readStream.on('data', (chunk) => {
-                data.push(chunk);
-            });
-
-            readStream.on('end', () => {
-                let buf = Buffer.concat(data);
-
-                // save to storage
-                (async function () {
-                    // commit to IPFS & pin on storage
-                    await net.uploadToStorage(result[3], buf).then(ipfs => {
-                        let cid = ipfs.cid;
-                        let addr;
-                        let isPublic = true;
-
-                        // scope, scope
-                        if (fields.scope == "public") {
-                            // encrypt with general key
-                            addr = util.encryptData(BOLD_TEXT, cid.toString());
-                        } else { // encrypt such that only owner can parse it
-                            // sign something
-                            let sig = auth.pair.sign(BOLD_TEXT);
-                            addr = util.encryptData(util.uint8ToBase64(sig), cid.toString());
-
-                            isPublic = false;
-                        }
-                        
-                        // record onchain
-                        (async function () {
-                            const tx = api.tx.samaritan.addResource(auth.did, addr, isPublic, fields.name, fields.about);
-                            const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
-                                if (status.isInBlock) {
-                                    events.forEach(({ event: { data, method, section }, phase }) => {
-                                        if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
-                                            return res.send({
-                                                data: { msg: "process could not be completed." }, error: true
-                                            })
-                                        } 
-                        
-                                        if (section.match("samaritan", "i")) {
-                                            return res.send({
-                                                data: {
-                                                    url
-                                                }, 
-                                                error: false
-                                            })
-                                        } 
-                                    });
-                                }
-                            });
-                        }())
-                    })
-                })()
-            })
+        readStream.on('data', (chunk) => {
+            data.push(chunk);
         });
+
+        readStream.on('end', () => {
+            let buf = Buffer.concat(data);  // binary
+
+            // save to storage
+            (async function () {
+                // commit to IPFS & pin on storage
+                await net.uploadToStorage(storage_providers[0], buf).then(ipfs => {
+                    let cid = ipfs.cid;
+                    let addr;
+                    let isPublic = true;
+
+                    // scope, scope
+                    if (fields.scope == "public") {
+                        // encrypt with general key
+                        addr = util.encryptData(BOLD_TEXT, cid.toString());
+                    } else { // encrypt such that only owner can parse it
+
+                        // sign something
+                        let sig = auth.pair.sign(BOLD_TEXT);
+                        addr = util.encryptData(util.uint8ToBase64(sig), cid.toString());
+
+                        isPublic = false;
+                    }
+
+                    // two-way hash of metadata
+                    let twh = util.encryptData(BOLD_TEXT, fields.metadata);
+                    
+                    // record onchain
+                    (async function () {
+                        const tx = api.tx.samaritan.addResource(auth.did, addr, isPublic, hash, twh);
+                        const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+                            if (status.isInBlock) {
+                                events.forEach(({ event: { data, method, section }, phase }) => {
+                                    if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                                        return res.send({
+                                            data: { msg: "process could not be completed." }, error: true
+                                        })
+                                    } 
+                    
+                                    if (section.match("samaritan", "i")) {
+                                        return res.send({
+                                            data: {
+                                                url: `${auth.did}/r/${hash}`    // `r` for resource
+                                            }, 
+                                            error: false
+                                        })
+                                    } 
+                                });
+                            }
+                        });
+                    }())
+                })
+            })()
+        });
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+
+            error: true
+        })
+    }
+}
+
+// search the network for a resource
+async function initSearch(req, res) {
+    // check if the user is in session
+    const auth = isAuth(res.nonce);
+    
+    let { good_url, frags } = net.parseURL(req.url);   
+
+    if (good_url)
+        // select its IPFS CID
+        switch (frags[1]) {
+            case "r":   // resource e.g PDF
+                const transfer = api.tx.samaritan.fetchResource(frags[0], auth.did == frags[0], frags[2]);
+                const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+                    if (status.isInBlock) {
+                        events.forEach(({ event: { data, method, section }, phase }) => {
+                            // check for errors
+                            if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                                if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                                    let error = data.toHuman().dispatchError.Module.error == "0x0d000000"
+                                    ?   `the resource is private. Cannot retrieve it at this moment.` : `could not retrieve resource.`;
+                                
+                                    return res.send({
+                                        data: { msg: error }, error: true
+                                    })
+                                } 
+                            } 
+
+                            if (section.match("samaritan", "i")) {
+                                // we have uri, now process and retrieve from storage
+                                let rData = data.toHuman();
+                                let url = rData[0];
+                                let cid;
+
+                                // kinda dehash it, based on privacy scope
+                                if (auth.did != frags[0]) {
+                                    // decrypt with general key
+                                    cid = util.decryptData(BOLD_TEXT, url);
+                                } else { 
+                                    // sign something
+                                    let sig = auth.pair.sign(BOLD_TEXT);
+                                    cid = util.decryptData(util.uint8ToBase64(sig), url);
+                                }
+
+                                // query storage
+                                net.getFromStorage(cid, rData[1]).then(buf => {
+                                    // construct response
+                                    return res.send({
+                                        data: { 
+                                            msg: "data retrieval successful",
+                                            metadata: util.decryptData(BOLD_TEXT, rData[2]),
+                                            file: util.parseResource(buf, rData[2])
+                                        },
+                            
+                                        error: false
+                                    })
+                                });
+
+                            } 
+                        });
+                    }
+                });
+                
+                break;
+    } else {
+        return res.send({
+            data: { 
+                msg: "invalid URL specified."
+            },
+
+            error: true
+        })
+    }
+}
+
+// load metadata of all files
+async function loadLib(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        const transfer = api.tx.samaritan.fetchFiles(auth.did);
+        const hx = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+            if (status.isInBlock) {
+                events.forEach(({ event: { data, method, section }, phase }) => {
+                    /// check for errors
+                    if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                        return res.send({
+                            data: { msg: "process could not be completed." }, error: true
+                        })
+                    } 
+
+                    if (section.match("samaritan", "i")) {
+                        let rData = data.toHuman()[0];
+                        let box = [];
+
+                        // dehash all metadatas
+                        for (var i = 0; i < rData.length; i++) {
+                            let el = rData[i];
+                            if (!isNaN(rData[i + 1]))
+                                el = util.decryptData(BOLD_TEXT, rData[i]);
+                            
+
+                            box.push(el);
+                        }
+
+                        return res.send({
+                            data: {
+                                did: auth.did,
+                                metas: box
+                            }, 
+                            error: false
+                        })
+                    }
+                })
+            }
+        }) 
     } else {
         return res.send({
             data: { 
@@ -893,10 +1000,9 @@ app.post('/pull', (req, res) => {
 
 // upload Samaritan data to storage
 app.post('/upload', (req, res) => {
-     
     const form = new formidable.IncomingForm();
     form.parse(req, function(err, fields, files) {
-  
+
         var oldPath = files.file.filepath;
         var newPath = uploadFolder + '/' + fields.file_name;
 
@@ -907,6 +1013,16 @@ app.post('/upload', (req, res) => {
         // process upload
         processUpload(fields, newPath, res);
     })
+})
+
+// search and return a resource
+app.post('/search', (req, res) => {
+    initSearch(req.body, res);
+})
+
+// load all files belonging to Samaritans
+app.post('/library', (req, res) => {
+    loadLib(req.body, res);
 })
 
 // listen on port 3000

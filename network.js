@@ -105,6 +105,15 @@ export async function uploadToStorage(network, data) {
     return { cid, size };
 }
 
+export async function getFromStorage(cid, network) {
+    // if (network == "crust network") {
+        
+    // }
+    let buf = await getFromIPFS(cid);
+
+    return buf;
+}
+
 export async function getFromIPFS(cid) {
     const bufferedContents = await toBuffer(ipfs.cat(cid)); // returns a Buffer
 
@@ -166,4 +175,21 @@ export function constructURL(type, did, result) {
     let url = `${did}/${type}/${result[1]}/${hash}`;
 
     return url;
+}
+
+// parse a resource URL
+export function parseURL(url) {
+    let good_url = true;
+
+    // break it up
+    let box = url.split("/");
+
+    // first, the url must start with a DID URI
+    if (!url.startsWith("did:sam:root:") || box.length != 3)
+        good_url = false;
+
+    return {
+        good_url,
+        frags: box,
+    }
 }

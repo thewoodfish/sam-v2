@@ -123,10 +123,8 @@ document.body.addEventListener("click", (e) => {
                 const blob = new Blob([new Uint8Array(e.target.result)], { type: file.type });
 
                 data.append("scope", qs(".sam-file-scope").value);
-                data.append("name", qs(".sam-file-name").value);
-                data.append("about", qs(".sam-file-about").value);
+                data.append("metadata", `${file.name}--${file.size}--${file.type}`);
                 data.append("nonce", getNonce());
-                data.append("file_name", document.querySelector(`.sam-file`).files[0].name);
                 data.append("file", blob);
 
                 // send the result to the server
@@ -141,6 +139,7 @@ document.body.addEventListener("click", (e) => {
                                 signal(`fatal: ${res.data.msg}`);
                             else {
                                 signal("You data has been uploaded to the internet.");
+
                                 let p = ce('p');
                                 p.innerText = `URL: ${res.data.url}`;
                                 qs(".logz").appendChild(p);
@@ -156,6 +155,87 @@ document.body.addEventListener("click", (e) => {
 
         } else
             signal("Initialize your Samaritan to continue");
+
+    } else if (e.target.classList.contains("get-sam-resource")) {
+        signal("Retrieving file from network...");
+
+        fetch ("/search", {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "url": qs(".sam-r-url").value,
+                "nonce": getNonce()
+            })
+        })
+        .then(res => {
+            (async function () {
+                await res.json().then(res => {
+    
+                    if (res.error) 
+                        signal(`fatal: ${res.data.msg}`);
+                    else {
+                        signal(res.data.msg);
+
+                        var urlCreator = window.URL || window.webkitURL;
+                        var imageUrl = urlCreator.createObjectURL(res.data.file);
+
+                        var img = ce("img");
+                        img.src = imageUrl;
+
+                        qs(".sam-res-con").appendChild(img);
+                    }
+                });
+            })();  f
+        })
+    } else if (e.target.classList.contains("load-files")) {
+        signal("loading all your files...");
+
+        fetch ("/library", {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "nonce": getNonce()
+            })
+        })
+        .then(res => {
+            (async function () {
+                await res.json().then(res => {
+    
+                    if (res.error) 
+                        signal(`fatal: ${res.data.msg}`);
+                    else {
+                        for (var i = 0; i < res.data.metas.length; i += 3) {
+                            let div = ce("div");
+                            div.className = "f-con";
+
+                            let p1 = ce('p');
+                            let p2 = ce('p');
+                            let p3 = ce('p');
+                            let p4 = ce('p');
+
+                            let meta = res.data.metas[i + 1].split("--");   // metadata
+                            p1.innerText = `Name: ${meta[0]}`;
+                            p2.innerText = `Metadata: size -> ${meta[1]}, type -> ${meta[2]}`;
+                            p3.innerText = `Time of Upload: ${new Date(res.data.metas[i + 2] * 1000)}`;
+                            p4.innerText = `URI: ${res.data.did}/r/${res.data.metas[0]}`;
+
+                            div.appendChild(p1);
+                            div.appendChild(p2);
+                            div.appendChild(p3);
+                            div.appendChild(p4);
+
+                            qs(".my-files").appendChild(div);
+                        }
+
+                        signal(`${res.data.metas.length / 3} files retrieved.`)
+                    }
+                });
+            })();  
+        })
     }
     
 }, false);

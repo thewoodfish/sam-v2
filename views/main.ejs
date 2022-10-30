@@ -29,8 +29,10 @@
                 <div class="bd-example">
                     <nav>
                         <div class="nav nav-tabs mb-3" id="nav-tab" role="tablist">
-                            <button class="nav-link active" id="nav-home-tab" data-bs-toggle="tab" data-bs-target="#nav-home" type="button" role="tab" aria-controls="nav-home" aria-selected="true">My Files</button>
+                            <button class="nav-link active" id="nav-home-tab" data-bs-toggle="tab" data-bs-target="#nav-home" type="button" role="tab" aria-controls="nav-home" aria-selected="true">Auth</button>
+                            <button class="nav-link" id="nav-files-tab" data-bs-toggle="tab" data-bs-target="#nav-files" type="button" role="tab" aria-controls="nav-files" aria-selected="true">My Files</button>
                             <button class="nav-link" id="nav-profile-tab" data-bs-toggle="tab" data-bs-target="#nav-profile" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">Upload</button>
+                            <button class="nav-link" id="nav-search-tab" data-bs-toggle="tab" data-bs-target="#nav-search" type="button" role="tab" aria-controls="nav-search" aria-selected="false">Search</button>
                             <button class="nav-link" id="nav-contact-tab" data-bs-toggle="tab" data-bs-target="#nav-contact" type="button" role="tab" aria-controls="nav-contact" aria-selected="false">Terminal</button>
                         </div>
                         </nav>
@@ -62,6 +64,25 @@
                                 </div>
                                 </div>
                             </div>
+                            <div class="tab-pane fade" id="nav-search" role="tabpanel" aria-labelledby="nav-search-tab">
+                                <div>
+                                <p>Retreive a file from the network</p>
+    
+                                <div class="mb-3">
+                                   
+                                    <div class="mb-3">
+                                        <label  class="form-label">File URL</label>
+                                        <input class="form-control form-control-sm sam-r-url" type="text" aria-label=".form-control-sm example">
+                                    </div>
+                                    <div class="sam-res-con">
+                                    </div>
+                                </div>
+    
+                                <div class="col-12">
+                                    <button class="btn btn-primary get-sam-resource" type="submit">Search</button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="tab-pane fade" id="nav-profile" role="tabpanel" aria-labelledby="nav-profile-tab">
                             <div class="row">
                                 <div class="col-md-6 fs-80">
@@ -80,14 +101,6 @@
                                                         <option value="private">Private</option>
                                                     </select>
                                                 </div>
-                                                <div class="mb-3">
-                                                    <label  class="form-label">Name of file (optional)</label>
-                                                    <input class="form-control form-control-sm sam-file-name" type="text" aria-label=".form-control-sm example">
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label  class="form-label">About file (optional)</label>
-                                                    <textarea class="form-control form-control-sm sam-file-about" aria-label="With textarea"></textarea>
-                                                </div>
                                                 <div class="col-12">
                                                     <button class="btn btn-primary sam-file-upload-btn" onclick="return false">Upload file</button>
                                                 </div>
@@ -95,10 +108,17 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6 logz">
-                                    <p class="fs-70">Logs</p>
+                                <div class="col-md-6 logz fs-70">
+                                    <p class="">Logs</p>
 
                                 </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="nav-files" role="tabpanel" aria-labelledby="nav-contact-tab">
+                            <p>Load all your files on the network.</p>
+                            <button class=" btn btn-primary load-files">Load</button>
+                            <div class="my-files mt-50 fs-70">
+
                             </div>
                         </div>
                         <div class="tab-pane fade" id="nav-contact" role="tabpanel" aria-labelledby="nav-contact-tab">
