@@ -626,230 +626,143 @@ async function pullCredential(req, res) {
     }
 }
 
-// create verifiable credential
-async function initCredential(raw_cred, auth, res) {
-    // get the VC nonce and index from network
-    const transfer = api.tx.samaritan.getIndexes(auth.did);
-    const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
-        if (status.isInBlock) {
-            events.forEach(({ event: { data, method, section }, phase }) => {
-                /// check for errors
-                if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
-                    return res.send({
-                        data: { msg: "process could not be completed." }, error: true
-                    })
-                } 
+// // create verifiable credential
+// async function initCredential(raw_cred, auth, res) {
+//     // get the VC nonce and index from network
+//     const transfer = api.tx.samaritan.getIndexes(auth.did);
+//     const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+//         if (status.isInBlock) {
+//             events.forEach(({ event: { data, method, section }, phase }) => {
+//                 /// check for errors
+//                 if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+//                     return res.send({
+//                         data: { msg: "process could not be completed." }, error: true
+//                     })
+//                 } 
 
-                if (section.match("samaritan", "i")) {
-                    let index = data.toHuman();
-                    let rcred = JSON.parse(raw_cred);
-                    let cred = net.createCredential(raw_cred, auth.did, index);
+//                 if (section.match("samaritan", "i")) {
+//                     let index = data.toHuman();
+//                     let rcred = JSON.parse(raw_cred);
+//                     let cred = net.createCredential(raw_cred, auth.did, index);
 
-                    // construct address
-                    let addr = `${cred["id"]}/r/vc/${index[1]}/n${index[0]}-i${index[2]}`;
+//                     // construct address
+//                     let addr = `${cred["id"]}/r/vc/${index[1]}/n${index[0]}-i${index[2]}`;
 
-                    // sign credential
-                    let scred = net.signCredential(auth.pair, cred);
-                    let hash = "";
+//                     // sign credential
+//                     let scred = net.signCredential(auth.pair, cred);
+//                     let hash = "";
 
-                    // is it public?
-                    if (rcred.public) {
-                        // encrypt with general key
-                        hash = util.encryptData(BOLD_TEXT, JSON.stringify(scred));
-                    } else { // encrypt such that only owner can read it
-                        // sign something
-                        let sig = auth.pair.sign(BOLD_TEXT);
-                        hash = util.encryptData(util.uint8ToBase64(sig), JSON.stringify(scred));
-                    }
+//                     // is it public?
+//                     if (rcred.public) {
+//                         // encrypt with general key
+//                         hash = util.encryptData(BOLD_TEXT, JSON.stringify(scred));
+//                     } else { // encrypt such that only owner can read it
+//                         // sign something
+//                         let sig = auth.pair.sign(BOLD_TEXT);
+//                         hash = util.encryptData(util.uint8ToBase64(sig), JSON.stringify(scred));
+//                     }
 
-                    let desc = util.encryptData(BOLD_TEXT, rcred.desc.substr(0, 500));
+//                     let desc = util.encryptData(BOLD_TEXT, rcred.desc.substr(0, 500));
 
-                    // save to storage
-                    (async function () {
-                        // commit to IPFS
-                        await net.uploadToStorage(hash).then(ipfs => {
-                            let cid = ipfs.cid;
+//                     // save to storage
+//                     (async function () {
+//                         // commit to IPFS
+//                         await net.uploadToStorage(hash).then(ipfs => {
+//                             let cid = ipfs.cid;
                             
-                            // send the CID onchain to record the creation of the credential
-                            (async function () {
-                                const tx = api.tx.samaritan.recordCredential(auth.did, rcred.id, cid, hash, rcred.scope, desc, addr);
-                                const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
-                                    if (status.isInBlock) {
-                                        events.forEach(({ event: { data, method, section }, phase }) => {
-                                            if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
-                                                return res.send({
-                                                    data: { msg: "could not create samaritan" }, error: true
-                                                })
-                                            } 
+//                             // send the CID onchain to record the creation of the credential
+//                             (async function () {
+//                                 const tx = api.tx.samaritan.recordCredential(auth.did, rcred.id, cid, hash, rcred.scope, desc, addr);
+//                                 const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+//                                     if (status.isInBlock) {
+//                                         events.forEach(({ event: { data, method, section }, phase }) => {
+//                                             if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+//                                                 return res.send({
+//                                                     data: { msg: "could not create samaritan" }, error: true
+//                                                 })
+//                                             } 
                             
-                                            if (section.match("samaritan", "i")) {
-                                                return res.send({
-                                                    data: {
-                                                        addr: data.toHuman()[1]
-                                                    }, 
-                                                    error: false
-                                                })
-                                            } 
-                                        });
-                                    }
-                                });
-                            }())
-                        })
-                    })()
-                } 
-            });
-        }
-    });
-}
+//                                             if (section.match("samaritan", "i")) {
+//                                                 return res.send({
+//                                                     data: {
+//                                                         addr: data.toHuman()[1]
+//                                                     }, 
+//                                                     error: false
+//                                                 })
+//                                             } 
+//                                         });
+//                                     }
+//                                 });
+//                             }())
+//                         })
+//                     })()
+//                 } 
+//             });
+//         }
+//     });
+// }
 
-// process the upload of the Samaritans data to the network
+// process the upload of the Samaritans data to the internet
 async function processUpload(fields, path, res) {
     const auth = isAuth(fields.nonce);
     if (auth.is_auth) {
-        
-        // create hash from metadata
-        let hash = blake2AsHex(fields.metadata);
-        
-        // read data and upload to IPFS and pin on Crus
-        const readStream = fs.createReadStream(path, {});
-        const data = [];
+        // save to storage
+        (async function () {
+            // commit to IPFS & pin on storage
+            await net.uploadToStorage(storage_providers[0], path, auth.pair, fields.metadata.split("//")[0]).then(reslt => {
+                // check for errors
+                if (reslt.error) {
+                    return res.send({
+                        data: { 
+                            msg: "process could not be completed."
+                        },
+            
+                        error: true
+                    })
+                }
 
-        readStream.on('data', (chunk) => {
-            data.push(chunk);
-        });
+                let cid = reslt.cid;
 
-        readStream.on('end', () => {
-            let buf = Buffer.concat(data);  // binary
+                // data is always private by default
+                let file_data = util.createMetadataFile(fields, cid);
+                        
+                // create hash from metadata
+                let hash = blake2AsHex(file_data);
+            
+                // sign something
+                let sig = auth.pair.sign(BOLD_TEXT);
+                let meta = util.encryptData(util.uint8ToBase64(sig), JSON.stringify(file_data));
 
-            // save to storage
-            (async function () {
-                // commit to IPFS & pin on storage
-                await net.uploadToStorage(storage_providers[0], buf).then(ipfs => {
-                    let cid = ipfs.cid;
-                    let addr;
-                    let isPublic = true;
-
-                    // scope, scope
-                    if (fields.scope == "public") {
-                        // encrypt with general key
-                        addr = util.encryptData(BOLD_TEXT, cid.toString());
-                    } else { // encrypt such that only owner can parse it
-
-                        // sign something
-                        let sig = auth.pair.sign(BOLD_TEXT);
-                        addr = util.encryptData(util.uint8ToBase64(sig), cid.toString());
-
-                        isPublic = false;
-                    }
-
-                    // two-way hash of metadata
-                    let twh = util.encryptData(BOLD_TEXT, fields.metadata);
-                    
-                    // record onchain
-                    (async function () {
-                        const tx = api.tx.samaritan.addResource(auth.did, addr, isPublic, hash, twh);
-                        const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
-                            if (status.isInBlock) {
-                                events.forEach(({ event: { data, method, section }, phase }) => {
-                                    if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
-                                        return res.send({
-                                            data: { msg: "process could not be completed." }, error: true
-                                        })
-                                    } 
-                    
-                                    if (section.match("samaritan", "i")) {
-                                        return res.send({
-                                            data: {
-                                                url: `${auth.did}/r/${hash}`    // `r` for resource
-                                            }, 
-                                            error: false
-                                        })
-                                    } 
-                                });
-                            }
-                        });
-                    }())
-                })
-            })()
-        });
+                // record onchain
+                (async function () {
+                    const tx = api.tx.samaritan.addFile(auth.did, meta, hash, fields.parent_dir);
+                    const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+                        if (status.isInBlock) {
+                            events.forEach(({ event: { data, method, section }, phase }) => {
+                                if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                                    return res.send({
+                                        data: { msg: "process could not be completed." }, error: true
+                                    })
+                                } 
+                
+                                if (section.match("samaritan", "i")) {
+                                    return res.send({
+                                        data: {
+                                            hash
+                                        }, 
+                                        error: false
+                                    })
+                                } 
+                            });
+                        }
+                    });
+                }())
+            })
+        })()
     } else {
         return res.send({
             data: { 
                 msg: "samaritan not recognized"
-            },
-
-            error: true
-        })
-    }
-}
-
-// search the network for a resource
-async function initSearch(req, res) {
-    // check if the user is in session
-    const auth = isAuth(res.nonce);
-    
-    let { good_url, frags } = net.parseURL(req.url);   
-
-    if (good_url)
-        // select its IPFS CID
-        switch (frags[1]) {
-            case "r":   // resource e.g PDF
-                const transfer = api.tx.samaritan.fetchResource(frags[0], auth.did == frags[0], frags[2]);
-                const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
-                    if (status.isInBlock) {
-                        events.forEach(({ event: { data, method, section }, phase }) => {
-                            // check for errors
-                            if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
-                                if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
-                                    let error = data.toHuman().dispatchError.Module.error == "0x0d000000"
-                                    ?   `the resource is private. Cannot retrieve it at this moment.` : `could not retrieve resource.`;
-                                
-                                    return res.send({
-                                        data: { msg: error }, error: true
-                                    })
-                                } 
-                            } 
-
-                            if (section.match("samaritan", "i")) {
-                                // we have uri, now process and retrieve from storage
-                                let rData = data.toHuman();
-                                let url = rData[0];
-                                let cid;
-
-                                // kinda dehash it, based on privacy scope
-                                if (auth.did != frags[0]) {
-                                    // decrypt with general key
-                                    cid = util.decryptData(BOLD_TEXT, url);
-                                } else { 
-                                    // sign something
-                                    let sig = auth.pair.sign(BOLD_TEXT);
-                                    cid = util.decryptData(util.uint8ToBase64(sig), url);
-                                }
-
-                                // query storage
-                                net.getFromStorage(cid, rData[1]).then(buf => {
-                                    // construct response
-                                    return res.send({
-                                        data: { 
-                                            msg: "data retrieval successful",
-                                            metadata: util.decryptData(BOLD_TEXT, rData[2]),
-                                            file: util.parseResource(buf, rData[2])
-                                        },
-                            
-                                        error: false
-                                    })
-                                });
-
-                            } 
-                        });
-                    }
-                });
-                
-                break;
-    } else {
-        return res.send({
-            data: { 
-                msg: "invalid URL specified."
             },
 
             error: true
@@ -881,9 +794,8 @@ async function loadLib(req, res) {
                             let el = rData[i];
                             if (!isNaN(rData[i + 1]))
                                 el = util.decryptData(BOLD_TEXT, rData[i]);
-                            
 
-                            box.push(el);
+                                box.push(el);
                         }
 
                         return res.send({

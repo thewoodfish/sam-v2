@@ -1,52 +1,113 @@
-// import { createRequire } from "module";
-// const require = createRequire(import.meta.url);
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
 
-// import path from 'path';
-// import {fileURLToPath} from 'url';
+import path from 'path';
+import {fileURLToPath} from 'url';
 
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// import { ApiPromise, WsProvider } from '@polkadot/api';
-// import { typesBundleForPolkadot, crustTypes } from '@crustio/type-definitions';
-// const { Keyring } = require('@polkadot/keyring');
+const { Keyring } = require('@polkadot/keyring');
+import { stringToU8a, u8aToHex } from '@polkadot/util';
+
+const fs = require("fs");
+const https = require("https");
+const { create, globSource } = require('ipfs-http-client');
+const got = require('got');
+
+const keyring = new Keyring({ type: 'sr25519' });
+
+// imports 
+const util = require("./utility.cjs");
 
 
-// // Create global chain instance
-// const crustChainEndpoint = 'wss://rpc.crust.network';
-// const api = new ApiPromise({
-//     provider: new WsProvider(crustChainEndpoint),
-//     typesBundle: typesBundleForPolkadot,
-// });
+// crust storage network specific
+function crust_GetAuthHeader(pair) {
+    const sig = pair.sign(pair.address);
+    const sigHex = '0x' + Buffer.from(sig).toString('hex');
 
-// const keyring = new Keyring({ type: 'sr25519' });
+    return Buffer.from(`sub-${pair.address}:${sigHex}`).toString('base64');
+}
 
-// export async function placeStorageOrder(fileCid, fileSize) {
+// upload to IPFS gateway
+async function uploadToGateway(path, ipfsGateway) {
+    const ipfs = create({
+        url: ipfsGateway + '/api/v0',
+        headers: {
+            authorization: 'Basic ' + authHeader
+        }
+    });
 
-//     let mnemonic = 'loyal owner priority mistake recall mushroom gap rotate next action ghost tourist';
-//     const sam = keyring.addFromUri(mnemonic);
+    const { cid } = await ipfs.add(globSource(path, '**/*'));
 
-//     const tips = 0;
-//     const memo = '';
-//     const tx = api.tx.market.placeStorageOrder(fileCid, fileSize, tips, memo);
+    if (cid) {
+        return { cid, error: false };
+    } else {
+        return { cid, error: true };
+    }
+}
 
-//     await api.isReadyOrError;
-//     return new Promise((resolve, reject) => {
-//         tx.signAndSend(sam, ({events = [], status}) => {
-//             console.log(`💸  Tx status: ${status.type}, nonce: ${tx.nonce}`);
+// pin IPFS file on a pining service
+async function pinIPFSFile(ipfsPinningService, cid, authHeader, name) {
+    const { body } = await got.post(
+        ipfsPinningService + '/pins',
+        {
+            headers: {
+                authorization: 'Bearer ' + authHeader
+            },
+            json: {
+                cid: cid.toV0().toString(),
+                name
+            }
+        }
+    );
+}
 
-//             if (status.isInBlock) {
-//                 events.forEach(({event: {method, section}}) => {
-//                     if (method === 'ExtrinsicSuccess') {
-//                         console.log(`✅  Place storage order success!`);
-//                         resolve(true);
-//                     }
-//                 });
-//             } else {
-//                 // Pass it
-//             }
-//         }).catch(e => {
-//             reject(e);
-//         })
-//     });
-// }
+// crust storage network specific
+export async function uploadToCrustNetwork(path, pair, name) {
+    let header = crust_GetAuthHeader(pair);
+
+    let data = uploadToGateway(path, 'https://crustwebsites.net');
+
+    if (!data.error) {
+        // pin on pinning service
+        let body = pinIPFSFile('https://pin.crustcode.com/psa', (await data).cid, header, name);
+
+        if (body) {
+            const rid = JSON.parse(body)['requestId'];
+            console.log(body, rid);
+
+            while (true) {
+                const {body: pinningStat} = await got(
+                    ipfsPinningService + `/pins/${rid}`,
+                    {
+                        headers: {
+                            authorization: 'Bearer ' + authHeader
+                        }
+                    }
+                );
+
+                if (pinningStat.status == "pinned") {
+                    return {
+                        cid: pinningStat.pin.cid,
+                        error: false
+                    }
+                }
+
+                await timeout(1000);
+            }
+        } else {
+            console.log(body);
+            return {
+                cid: "",
+                error: true
+            }
+        }
+    } else {
+        return {
+            cid: "",
+            error: true
+        }
+    }
+
+}

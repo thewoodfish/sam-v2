@@ -7,10 +7,6 @@ import {fileURLToPath} from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import * as IPFS from "ipfs-core";
-import { json } from "express";
-const toBuffer = require('it-to-buffer');
-
 const { Keyring } = require('@polkadot/keyring');
 import { stringToU8a, u8aToHex } from '@polkadot/util';
 
@@ -22,9 +18,7 @@ const keyring = new Keyring({ type: 'sr25519' });
 // imports 
 const util = require("./utility.cjs");
 import * as storg from "./storage.js";
-import { generateKey } from "crypto";
 
-const ipfs = await IPFS.create();
 const HASH_KEY = "j";
 
 // using alice here temporarily
@@ -80,44 +74,15 @@ function generateVM(did, mnemonic, str) {
     }
 }
 
-async function uploadToIPFS(data) {
-    const { cid } = await ipfs.add(data);
-
-    if (cid) 
-        console.log(cid.toV0().toString());
-    else 
-        return { cid: "error", size: 0 };
-
-    const fileStat = await ipfs.files.stat(cid);
-
-    return { cid, size: fileStat.cumulativeSize };
-}
-
-export async function uploadToStorage(network, data) {
-    // upload to IPFS
-    const { cid, size } = await uploadToIPFS(data);
-
+export async function uploadToStorage(network, path, pair, name) {
     // pin on dStorage
+    let status;
+    
     if (network == "crust network") {
-        // await storg.placeStorageOrder(cid, size);
+        status = storg.uploadToCrustNetwork(path, pair, name);
     }
 
-    return { cid, size };
-}
-
-export async function getFromStorage(cid, network) {
-    // if (network == "crust network") {
-        
-    // }
-    let buf = await getFromIPFS(cid);
-
-    return buf;
-}
-
-export async function getFromIPFS(cid) {
-    const bufferedContents = await toBuffer(ipfs.cat(cid)); // returns a Buffer
-
-    return bufferedContents;
+    return status;
 }
 
 // create a Verfifiable Credential

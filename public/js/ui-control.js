@@ -122,8 +122,11 @@ document.body.addEventListener("click", (e) => {
                 let data = new FormData();
                 const blob = new Blob([new Uint8Array(e.target.result)], { type: file.type });
 
-                data.append("scope", qs(".sam-file-scope").value);
-                data.append("metadata", `${file.name}--${file.size}--${file.type}`);
+                // generate random number
+                let rand = Math.random() * 10000;
+
+                data.append("parent_dir", qs(".upload-dir").value);
+                data.append("metadata", `${file.name}//${file.size}//${file.type}//${rand}`);
                 data.append("nonce", getNonce());
                 data.append("file", blob);
 

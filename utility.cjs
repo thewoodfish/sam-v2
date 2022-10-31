@@ -123,19 +123,20 @@ function decryptData(key, cipher) {
     return crypto.AES.decrypt(cipher, key).toString(crypto.enc.Utf8);
 }
 
-// // check if there is a syntax error in JSON fetched
-// function isJSONSyntaxError(str) {
-//     const json = JSON.parse(JSON.stringify(str));
-
-//     // first check that all fields exist
-//     if (!json["context"] || !json["id"] || !json["cred"] || !json["desc"] || !json["scope"])
-//         return true;
-
-    
-
-// }
+// generate metadata for file uploaded
+function createMetadataFile(fields, cid) {
+    let meta = fields.metadata.split("//");
+    return {
+        cid,
+        name: meta[0],
+        size: meta[1],
+        type: meta[2],
+        permission: 700,
+        nonce: meta[3]
+    }
+}
 
 const uint8ToBase64 = (arr) => Buffer.from(arr).toString('base64');
 
-module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate, splitArray, uint8ToBase64, decryptData, encryptData, extractIDs, parseVCURL };
+module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate, splitArray, uint8ToBase64, decryptData, encryptData, extractIDs, parseVCURL, createMetadataFile };
  

@@ -28,6 +28,7 @@
     "formidable": "^2.0.1",
     "generator-crust": "^2.0.1",
     "ipfs-core": "^0.16.0",
+    "ipfs-http-client": "^59.0.0",
     "it-to-buffer": "^2.0.2"
   },
   "devDependencies": {
