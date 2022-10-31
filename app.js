@@ -626,82 +626,6 @@ async function pullCredential(req, res) {
     }
 }
 
-// // create verifiable credential
-// async function initCredential(raw_cred, auth, res) {
-//     // get the VC nonce and index from network
-//     const transfer = api.tx.samaritan.getIndexes(auth.did);
-//     const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
-//         if (status.isInBlock) {
-//             events.forEach(({ event: { data, method, section }, phase }) => {
-//                 /// check for errors
-//                 if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
-//                     return res.send({
-//                         data: { msg: "process could not be completed." }, error: true
-//                     })
-//                 } 
-
-//                 if (section.match("samaritan", "i")) {
-//                     let index = data.toHuman();
-//                     let rcred = JSON.parse(raw_cred);
-//                     let cred = net.createCredential(raw_cred, auth.did, index);
-
-//                     // construct address
-//                     let addr = `${cred["id"]}/r/vc/${index[1]}/n${index[0]}-i${index[2]}`;
-
-//                     // sign credential
-//                     let scred = net.signCredential(auth.pair, cred);
-//                     let hash = "";
-
-//                     // is it public?
-//                     if (rcred.public) {
-//                         // encrypt with general key
-//                         hash = util.encryptData(BOLD_TEXT, JSON.stringify(scred));
-//                     } else { // encrypt such that only owner can read it
-//                         // sign something
-//                         let sig = auth.pair.sign(BOLD_TEXT);
-//                         hash = util.encryptData(util.uint8ToBase64(sig), JSON.stringify(scred));
-//                     }
-
-//                     let desc = util.encryptData(BOLD_TEXT, rcred.desc.substr(0, 500));
-
-//                     // save to storage
-//                     (async function () {
-//                         // commit to IPFS
-//                         await net.uploadToStorage(hash).then(ipfs => {
-//                             let cid = ipfs.cid;
-                            
-//                             // send the CID onchain to record the creation of the credential
-//                             (async function () {
-//                                 const tx = api.tx.samaritan.recordCredential(auth.did, rcred.id, cid, hash, rcred.scope, desc, addr);
-//                                 const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
-//                                     if (status.isInBlock) {
-//                                         events.forEach(({ event: { data, method, section }, phase }) => {
-//                                             if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
-//                                                 return res.send({
-//                                                     data: { msg: "could not create samaritan" }, error: true
-//                                                 })
-//                                             } 
-                            
-//                                             if (section.match("samaritan", "i")) {
-//                                                 return res.send({
-//                                                     data: {
-//                                                         addr: data.toHuman()[1]
-//                                                     }, 
-//                                                     error: false
-//                                                 })
-//                                             } 
-//                                         });
-//                                     }
-//                                 });
-//                             }())
-//                         })
-//                     })()
-//                 } 
-//             });
-//         }
-//     });
-// }
-
 // process the upload of the Samaritans data to the internet
 async function processUpload(fields, path, res) {
     const auth = isAuth(fields.nonce);
@@ -735,7 +659,7 @@ async function processUpload(fields, path, res) {
 
                 // record onchain
                 (async function () {
-                    const tx = api.tx.samaritan.addFile(auth.did, meta, hash, fields.parent_dir);
+                    const tx = api.tx.directory.addFile(auth.did, meta, hash, fields.parent_dir);
                     const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
                         if (status.isInBlock) {
                             events.forEach(({ event: { data, method, section }, phase }) => {
@@ -927,15 +851,6 @@ app.post('/upload', (req, res) => {
     })
 })
 
-// search and return a resource
-app.post('/search', (req, res) => {
-    initSearch(req.body, res);
-})
-
-// load all files belonging to Samaritans
-app.post('/library', (req, res) => {
-    loadLib(req.body, res);
-})
 
 // listen on port 3000
 app.listen(port, () => console.info(`Listening on port ${port}`));
