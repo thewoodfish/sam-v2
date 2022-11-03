@@ -192,15 +192,20 @@ document.body.addEventListener("click", (e) => {
                 });
             })();  f
         })
-    } else if (e.target.classList.contains("load-files")) {
-        signal("loading all your files...");
+    } else if (e.target.classList.contains("create-new-dir")) {
+        signal("Creating new directory...");
 
-        fetch ("/library", {
+        // generate random number
+        let rand = Math.random() * 10000;
+
+        fetch ("/mkdir", {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
+                "parent_dir": `${qs(".parent-dir").value}//${rand}`,
+                "new_dir": qs(".new-dir").value,
                 "nonce": getNonce()
             })
         })
@@ -211,33 +216,37 @@ document.body.addEventListener("click", (e) => {
                     if (res.error) 
                         signal(`fatal: ${res.data.msg}`);
                     else {
-                        for (var i = 0; i < res.data.metas.length; i += 3) {
-                            let div = ce("div");
-                            div.className = "f-con";
+                        signal(res.data.msg);
 
-                            let p1 = ce('p');
-                            let p2 = ce('p');
-                            let p3 = ce('p');
-                            let p4 = ce('p');
-
-                            let meta = res.data.metas[i + 1].split("--");   // metadata
-                            p1.innerText = `Name: ${meta[0]}`;
-                            p2.innerText = `Metadata: size -> ${meta[1]}, type -> ${meta[2]}`;
-                            p3.innerText = `Time of Upload: ${new Date(res.data.metas[i + 2] * 1000)}`;
-                            p4.innerText = `URI: ${res.data.did}/r/${res.data.metas[0]}`;
-
-                            div.appendChild(p1);
-                            div.appendChild(p2);
-                            div.appendChild(p3);
-                            div.appendChild(p4);
-
-                            qs(".my-files").appendChild(div);
-                        }
-
-                        signal(`${res.data.metas.length / 3} files retrieved.`)
                     }
                 });
-            })();  
+            })(); 
+        })
+    } else if (e.target.classList.contains("load-file-btn")) {
+        signal("Loading file or directory...");
+
+        fetch ("/access", {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "url": qs(".file-hash").value,
+                "nonce": getNonce()
+            })
+        })
+        .then(res => {
+            (async function () {
+                await res.json().then(res => {
+    
+                    if (res.error) 
+                        signal(`fatal: ${res.data.msg}`);
+                    else {
+                        signal(res.data.msg);
+
+                    }
+                });
+            })(); 
         })
     }
     

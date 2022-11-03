@@ -125,14 +125,27 @@ function decryptData(key, cipher) {
 
 // generate metadata for file uploaded
 function createMetadataFile(fields, cid) {
-    let meta = fields.metadata.split("//");
-    return {
-        cid,
-        name: meta[0],
-        size: meta[1],
-        type: meta[2],
-        permission: 700,
-        nonce: meta[3]
+    if (fields.metadata) {      // is a file
+        let meta = fields.metadata.split("//");
+
+        return {
+            cid,
+            name: meta[0],
+            size: meta[1],
+            type: meta[2],
+            permission: 700,
+            nonce: meta[3],
+        }
+    } else {    // is a directory
+        let p = fields.parent_dir.split("//");
+
+        return {
+            name: fields.new_dir,
+            parent: p[0],
+            type: "dir",
+            permission: 700,
+            nonce: p[1]
+        }
     }
 }
 

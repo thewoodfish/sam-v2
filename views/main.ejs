@@ -104,10 +104,41 @@
                                             </form>
                                         </div>
                                     </div>
+                                    <div>
+                                        <div class="bd-example mt-50">
+                                            <p>Create new Directory</p>
+                                            <form type="">
+                                                <div class="mb-3">
+                                                    <label  class="form-label">Parent Directory</label>
+                                                    <input type="text" required class="form-control form-control-sm parent-dir" >
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label  class="form-label">Directory</label>
+                                                    <input type="text" required class="form-control form-control-sm new-dir" >
+                                                </div>
+                                                <div class="col-12">
+                                                    <button class="btn btn-primary create-dir-btn" onclick="return false">Create Dir</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-6 logz fs-70">
-                                    <p class="">Logs</p>
-
+                                <div class="col-md-6">
+                                    <div class="bd-example">
+                                        <p>Load File / Folder</p>
+                                        <form type="">
+                                            <div class="mb-3">
+                                                <label  class="form-label fs-80">Resource URL</label>
+                                                <input type="text" required class="form-control form-control-sm file-hash" placeholder="did:sam:root:8sjhs8sb8d/r/7dsd87sufig78sf87fs87fsf87sgfg87sfy8sh7fs" >
+                                            </div>
+                                            <div class="col-12">
+                                                <button class="btn btn-primary load-file-btn" onclick="return false">Load File or Folder</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="mt-50 logz fs-70">
+                                        <p class="">Logs</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

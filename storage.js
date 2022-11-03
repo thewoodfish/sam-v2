@@ -12,14 +12,13 @@ import { stringToU8a, u8aToHex } from '@polkadot/util';
 
 const fs = require("fs");
 const https = require("https");
-const { create, globSource } = require('ipfs-http-client');
+import { create, globSource } from 'ipfs-http-client';
 const got = require('got');
 
 const keyring = new Keyring({ type: 'sr25519' });
 
 // imports 
 const util = require("./utility.cjs");
-
 
 // crust storage network specific
 function crust_GetAuthHeader(pair) {

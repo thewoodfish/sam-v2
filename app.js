@@ -111,7 +111,7 @@ async function createDIDDocument(res, did, mnemonic, nonce, provider) {
     let doc = net.createDIDDoc(did, mnemonic);
 
     // create hash link
-    let hash = util.encryptData(BOLD_TEXT, doc);
+    let hash = util.encryptData(BOLD_TEXT, doc);   
 
     // upload to d-Storage
     (async function () {
@@ -659,7 +659,7 @@ async function processUpload(fields, path, res) {
 
                 // record onchain
                 (async function () {
-                    const tx = api.tx.directory.addFile(auth.did, meta, hash, fields.parent_dir);
+                    const tx = api.tx.directory.addInodeEntry(auth.did, meta, hash, fields.parent_dir, false);
                     const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
                         if (status.isInBlock) {
                             events.forEach(({ event: { data, method, section }, phase }) => {
@@ -672,7 +672,7 @@ async function processUpload(fields, path, res) {
                                 if (section.match("samaritan", "i")) {
                                     return res.send({
                                         data: {
-                                            hash
+                                            url: `${auth.did}/r/${data.toHuman()[3]}/${hash}`    // 'r' for resource
                                         }, 
                                         error: false
                                     })
@@ -694,45 +694,279 @@ async function processUpload(fields, path, res) {
     }
 }
 
-// load metadata of all files
-async function loadLib(req, res) {
+// create new directory under the Samaritan 
+async function createNewDirectory(req, res) {
     const auth = isAuth(req.nonce);
     if (auth.is_auth) {
-        const transfer = api.tx.samaritan.fetchFiles(auth.did);
-        const hx = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
-            if (status.isInBlock) {
-                events.forEach(({ event: { data, method, section }, phase }) => {
-                    /// check for errors
-                    if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
-                        return res.send({
-                            data: { msg: "process could not be completed." }, error: true
-                        })
-                    } 
 
-                    if (section.match("samaritan", "i")) {
-                        let rData = data.toHuman()[0];
-                        let box = [];
+        // data is always private by default
+        let dir_data = util.createMetadataFile(fields, " ");
 
-                        // dehash all metadatas
-                        for (var i = 0; i < rData.length; i++) {
-                            let el = rData[i];
-                            if (!isNaN(rData[i + 1]))
-                                el = util.decryptData(BOLD_TEXT, rData[i]);
+        // create hash from metadata
+        let hash = blake2AsHex(dir_data);
+            
+        // sign something
+        let sig = auth.pair.sign(BOLD_TEXT);
+        let meta = util.encryptData(util.uint8ToBase64(sig), JSON.stringify(dir_data));
 
-                                box.push(el);
-                        }
+        // record onchain
+        (async function () {
+            const tx = api.tx.directory.addInodeEntry(auth.did, meta, hash, fields.parent_dir.split("//")[0], true);
+            const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+                if (status.isInBlock) {
+                    events.forEach(({ event: { data, method, section }, phase }) => {
+                        if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                            return res.send({
+                                data: { msg: "process could not be completed." }, error: true
+                            })
+                        } 
 
-                        return res.send({
-                            data: {
-                                did: auth.did,
-                                metas: box
-                            }, 
-                            error: false
-                        })
+                        if (section.match("samaritan", "i")) {
+                            return res.send({
+                                data: {
+                                    url: `${auth.did}/r/${data.toHuman()[3]}/${hash}`
+                                }, 
+                                error: false
+                            })
+                        } 
+                    });
+                }
+            });
+        }())
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+
+            error: true
+        })
+    }
+}
+
+// load a file or dir
+async function accessDataContainer(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        // check URL syntax
+        let data = net.parseURL(req.url);
+        if (data.isErrorFree) {
+            // get the metadata onchain
+            (async function () {
+                const tx = api.tx.directory.fetchMetadata(auth.did, data.frags[0], data.frags[2], data.frags[3]);
+                const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+                    if (status.isInBlock) {
+                        events.forEach(({ event: { data, method, section }, phase }) => {
+                            if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                                return res.send({
+                                    data: { msg: "could not fetch resource." }, error: true
+                                })
+                            } 
+            
+                            if (section.match("samaritan", "i")) {
+                                // get metadata
+                                let ret = data.toString()[0];
+
+                                // dahash it to get CID
+
+                                // sign something
+                                let sig = auth.pair.sign(BOLD_TEXT);
+                                let metadata = util.decryptData(util.uint8ToBase64(sig), JSON.stringify(ret));
+
+                                let meta = JSON.parse(metadata);
+
+                                // return CID
+                                return res.send({
+                                    data: {
+                                        type: meta.type,
+                                        pl: meta.type == "dir" 
+                                            ? {     // a directory
+                                                name: meta.name,
+                                                contains: [...DataTransfer.toString()[1]]
+                                            }
+                                            : {
+                                                    // a file
+                                                name: meta.name,
+                                                cid: meta.cid,
+                                                size: meta.size,
+                                            }
+                                    }, 
+                                    error: false
+                                })
+                            } 
+                        });
                     }
-                })
-            }
-        }) 
+                });
+            }())
+        } else {
+            return res.send({
+                data: { 
+                    msg: "invalid URI specified."
+                },
+    
+                error: true
+            })
+        }
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+
+            error: true
+        })
+    }
+}
+
+// delete a resource on the filesystem
+async function deleteResource(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        // check URL syntax
+        let data = net.parseURL(req.url);
+        if (data.isErrorFree) {
+            // get the metadata onchain
+            (async function () {
+                const tx = api.tx.directory.unlinkInode(auth.did, data.frags[0], data.frags[2], data.frags[3]);
+                const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+                    if (status.isInBlock) {
+                        events.forEach(({ event: { data, method, section }, phase }) => {
+                            if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                                return res.send({
+                                    data: { msg: "operation could not be complete." }, error: true
+                                })
+                            } 
+            
+                            if (section.match("samaritan", "i")) {
+                                // somehow remove file from crust pinning & get a refund maybe, lol
+
+                                return res.send({
+                                    data: { 
+                                        msg: "filesystem entry has been removed."
+                                    },
+                        
+                                    error: true
+                                })
+                            } 
+                        });
+                    }
+                });
+            }())
+        } else {
+            return res.send({
+                data: { 
+                    msg: "invalid URI specified."
+                },
+    
+                error: true
+            })
+        }
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+
+            error: true
+        })
+    }
+}
+
+// change resource access mode
+async function changeAccessMode(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        // check URL syntax
+        let data = net.parseURL(req.url);
+        if (data.isErrorFree) {
+            // get the metadata onchain
+            (async function () {
+                const tx = api.tx.directory.changePermission(auth.did, data.frags[0], data.frags[2], data.frags[3], req.mode);
+                const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+                    if (status.isInBlock) {
+                        events.forEach(({ event: { data, method, section }, phase }) => {
+                            if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                                return res.send({
+                                    data: { msg: "operation could not be complete." }, error: true
+                                })
+                            } 
+            
+                            if (section.match("samaritan", "i")) {
+                                // somehow rome file from crust pinning
+                                return res.send({
+                                    data: { 
+                                        msg: `inode permission changed to ${req.mode}`
+                                    },
+                        
+                                    error: true
+                                })
+                            } 
+                        });
+                    }
+                });
+            }())
+        } else {
+            return res.send({
+                data: { 
+                    msg: "invalid URI specified."
+                },
+    
+                error: true
+            })
+        }
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+
+            error: true
+        })
+    }
+}
+
+// change resource owner
+async function changeResourceOwner(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        // check URL syntax
+        let data = net.parseURL(req.url);
+        if (data.isErrorFree) {
+            // get the metadata onchain
+            (async function () {
+                const tx = api.tx.directory.modifyInodeOwner(auth.did, data.frags[0], data.frags[2], data.frags[3], req.did);
+                const txh = await tx.signAndSend(/* sam */ alice, ({ events = [], status }) => {
+                    if (status.isInBlock) {
+                        events.forEach(({ event: { data, method, section }, phase }) => {
+                            if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                                return res.send({
+                                    data: { msg: "could not assign new owner." }, error: true
+                                })
+                            } 
+            
+                            if (section.match("samaritan", "i")) {
+                                // somehow rome file from crust pinning
+                                return res.send({
+                                    data: { 
+                                        msg: `inode owership has been modified.`
+                                    },
+                        
+                                    error: true
+                                })
+                            } 
+                        });
+                    }
+                });
+            }())
+        } else {
+            return res.send({
+                data: { 
+                    msg: "invalid URI specified."
+                },
+    
+                error: true
+            })
+        }
     } else {
         return res.send({
             data: { 
@@ -851,6 +1085,40 @@ app.post('/upload', (req, res) => {
     })
 })
 
+// create a new directory 
+app.post('/mkdir', (req, res) => {
+    createNewDirectory(req.body, res);
+})
+
+// access a file or directory 
+app.post('/access', (req, res) => {
+    accessDataContainer(req.body, res);
+})
+
+// access a file or directory 
+app.post('/access', (req, res) => {
+    accessDataContainer(req.body, res);
+})
+
+// delete a file or directory 
+app.post('/del', (req, res) => {
+    deleteResource(req.body, res);
+})
+
+// change mode
+app.post('/chmod', (req, res) => {
+    changeAccessMode(req.body, res);
+})
+
+// change resource owner
+app.post('/chown', (req, res) => {
+    changeResourceOwner(req.body, res);
+})
+
+// complete file ownership change
+app.post('/chown', (req, res) => {
+    claimOwnership(req.body, res);
+})
 
 // listen on port 3000
 app.listen(port, () => console.info(`Listening on port ${port}`));

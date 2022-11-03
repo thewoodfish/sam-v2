@@ -21,9 +21,6 @@ import * as storg from "./storage.js";
 
 const HASH_KEY = "j";
 
-// using alice here temporarily
-const alice = keyring.addFromUri('//Alice');
-
 export function createRootDID(address) {
     return `did:sam:root:${address}`;
 }
@@ -144,17 +141,17 @@ export function constructURL(type, did, result) {
 
 // parse a resource URL
 export function parseURL(url) {
-    let good_url = true;
+    let isErrorFree = true;
 
     // break it up
     let box = url.split("/");
 
     // first, the url must start with a DID URI
-    if (!url.startsWith("did:sam:root:") || box.length != 3)
-        good_url = false;
+    if (!url.startsWith("did:sam:root:") || box.length != 4)
+        isErrorFree = false;
 
     return {
-        good_url,
+        isErrorFree,
         frags: box,
     }
 }
