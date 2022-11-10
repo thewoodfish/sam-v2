@@ -1121,4 +1121,4 @@ app.post('/chown', (req, res) => {
 })
 
 // listen on port 3000
-app.listen(port, () => console.info(`Listening on port ${port}`));
+app.listen(process.env.PORT, () => console.info(`Listening on port ${port}`));
