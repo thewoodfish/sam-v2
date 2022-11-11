@@ -12,11 +12,7 @@ const express = require('express');
 const app = express();
 const port = 3000;
 const fs = require('fs');
-// const https = require("https");
-
-// low budget
-const https = require("http");
-
+const https = require("https");
 const bodyParser = require('body-parser');
 
 // formidable form handler
