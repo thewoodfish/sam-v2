@@ -53,16 +53,16 @@ import {  } from '@polkadot/util-crypto';
 
 const BOLD_TEXT = "Sacha is a great buddy!";
 
-const keyring = new Keyring({ type: 'sr25519' });
+// const keyring = new Keyring({ type: 'sr25519' });
 
-const alice = keyring.addFromUri('//Alice');
-const storage_providers  = ["crust network"];
+// const alice = keyring.addFromUri('//Alice');
+// const storage_providers  = ["crust network"];
 
-cryptoWaitReady().then(() => {
-    // load all available addresses and accounts
-    keyringX.loadAll({ ss58Format: 42, type: 'sr25519' });
+// cryptoWaitReady().then(() => {
+//     // load all available addresses and accounts
+//     keyringX.loadAll({ ss58Format: 42, type: 'sr25519' });
   
-  });
+//   });
 
 // add new samaritan to chain
 async function createSamaritan(req, res) {
