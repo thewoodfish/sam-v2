@@ -31,29 +31,29 @@ export function signMsg(pair, str) {
 }
 
 // initialize the DID document
-export function createDIDDoc(did, mnemonic) {
+export function createDIDDoc(did, pair, nonce=0) {
     let json = {
         "@context": [
             "https://www.w3.org/ns/did/v1",
-            "https://www.sam.org/did/v1"
+            "https://www.sam.algorealm.org/did/v1"
         ],
         "id": did,
         "controller": [did],
         "authentication": [
-            generateVM(did, mnemonic, "auth")
+            generateVM(did, pair, "auth", nonce)
         ],
         "assertionMethod": [
-            generateVM(did, mnemonic, "assert")
+            generateVM(did, pair, "assert", nonce)
         ]
     };
 
     return JSON.stringify(json);
 }
 
-function generateVM(did, mnemonic, str) {
+function generateVM(did, pair, str, nonce) {
     // generate a hard derivation from the mnemonic
     const keyring = new Keyring();
-    let nkey = keyring.createFromUri(`${mnemonic}//${str}`);
+    let nkey = keyring.createFromUri(`//${pair}//${str}${++nonce}`);
 
     let hash = {
         "auth": "#key-0",
@@ -67,7 +67,7 @@ function generateVM(did, mnemonic, str) {
         "type": "Ed25519VerificationKey",
         "controller": did,
         "SS58format": 0,
-        "mnemonicMultibase": keyring.encodeAddress(nkey.address, 0)
+        "publicKeyMultibase": keyring.encodeAddress(nkey.address, 0)
     }
 }
 

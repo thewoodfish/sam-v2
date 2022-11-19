@@ -6,7 +6,7 @@ jQuery(function($, undefined) {
 				case "help": 
 				case "":
 					this.echo(`samaritan v0.0.5`);
-					this.echo(`Usage: sam <command> [arg1] [arg2] [arg3] [arg4]`);
+					this.echo(`Usage: sam <command> [arg1] [arg2] [arg3] [argN]`);
 					this.echo(`These are common samaritan commands used in various situations:`);
 					this.echo(`new <name>			creates a new samaritan with a non-unique name`);
 					this.echo(`init <keys>			lets your samaritan take control of the terminal`);
@@ -22,9 +22,6 @@ jQuery(function($, undefined) {
 					this.echo(`rotate				rotates your samritan keys and presents you with a new mnemonic`);
 					this.echo(`quorum				lists out all the samaritans in your trust quorum`);
 					this.echo(`revoke <DID>        removes a samaritan from your trust quorum`);
-					this.echo(``);
-					this.echo(`del <URI>           deletes a file from the samaritan filesystem`);
-					this.echo(`chmod <mode> <URI>  change the access permissions of a file or directory`);
 					break;
 				
 				case "new":
@@ -36,14 +33,11 @@ jQuery(function($, undefined) {
 						this.echo(`creating your samaritan...`);
 						this.pause();
 
-						fetch ("/new", {
-							method: 'post',
+						fetch (getURL(`new`, `name=${arg2}`), {
+							method: 'get',
 							headers: {
 								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({
-								"name": arg2
-							})
+							}
 						})
 						.then(res => {
 							(async function () {
@@ -57,13 +51,14 @@ jQuery(function($, undefined) {
 										// set nonce for further communication
 										sessionStorage.setItem("nonce", res.data.nonce);
 
+										main.echo("samaritan successfully added to the network");
+
 										main.echo(`DID:     ${res.data.did}`);
 										main.echo(`Keys:    ${res.data.seed} ([[b;red;] You have 30 seconds to copy them.])`);
 
 										main.pause();
 										setTimeout(() => {
-											main.update(-1, "Keys:    ****************************************************************************************************");
-											main.echo("samaritan successfully added to the network").resume();
+											main.update(-1, "Keys:    ****************************************************************************************************").resume();
 										}, 30000);
 									}
 
@@ -81,7 +76,7 @@ jQuery(function($, undefined) {
 					} else {
 
 						// check length of mnemonic
-						if (arg2.split(" ").length != 12) {
+						if (arg2.split(/\s+/).length != 12) {
 							this.echo(`fatal: invalid number of mnemonic`);
 						} else {
 							// clear seeds
@@ -89,14 +84,11 @@ jQuery(function($, undefined) {
 							this.echo(`initializing samaritan...`);
 							this.pause();
 
-							fetch ("/init", {
-								method: 'post',
+							fetch (getURL(`init`, `keys=${arg2}`), {
+								method: 'get',
 								headers: {
 									'Content-Type': 'application/json'
-								},
-								body: JSON.stringify({
-									"keys": arg2
-								})
+								}
 							})
 							.then(res => {
 								(async function () {
@@ -137,21 +129,27 @@ jQuery(function($, undefined) {
 								this.echo(`querying network...`);
 								this.pause();
 
-								fetch ("/find", {
-									method: 'post',
+								fetch (getURL(`find`, `did=${arg2}`, `nonce=${ getNonce() }`), {
+									method: 'get',
 									headers: {
 										'Content-Type': 'application/json'
-									},
-									body: JSON.stringify({
-										"did": did
-									})
+									}
 								})
 								.then(res => {
 									(async function () {
 										await res.json().then(res => {
 											main.resume();
 
-											// continue
+											if (res.error) 
+												main.echo(`fatal: ${res.data.msg}`);
+											else {
+												main.echo(`DID:             ${arg2}`);
+												main.echo(`DID document:    ${JSON.stringify(res.data.doc)}`);
+												main.echo(`DID doc metadata: `)
+												main.echo(`    version: ${res.data.version}`);
+												main.echo(`    active: ${res.data.active}`);
+												main.echo(`    created: ${res.data.created}`);
+											}
 										})
 									})();  
 								})
@@ -173,15 +171,11 @@ jQuery(function($, undefined) {
 							this.echo(`renaming...`);
 							this.pause();
 
-							fetch ("/rename", {
-								method: 'post',
+							fetch (getURL(`rename`, `name=${arg2}`, `nonce=${ getNonce() }`), {
+								method: 'get',
 								headers: {
 									'Content-Type': 'application/json'
-								},
-								body: JSON.stringify({
-									"name": arg2,
-									"nonce": getNonce()
-								})
+								}
 							})
 							.then(res => {
 								(async function () {
@@ -208,15 +202,11 @@ jQuery(function($, undefined) {
 						this.echo(`disabling your Samaritan...`);
 						this.pause();
 
-						fetch ("/change-status", {
-							method: 'post',
+						fetch (getURL(`change-status`, `cmd=disable`, `nonce=${ getNonce() }`), {
+							method: 'get',
 							headers: {
 								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({
-								"cmd": "disable",
-								"nonce": getNonce()
-							})
+							}
 						})
 						.then(res => {
 							(async function () {
@@ -242,15 +232,11 @@ jQuery(function($, undefined) {
 						this.echo(`changing scope to visible...`);
 						this.pause();
 
-						fetch ("/change-status", {
-							method: 'post',
+						fetch (getURL(`change-status`, `cmd=enable`, `nonce=${ getNonce() }`), {
+							method: 'get',
 							headers: {
 								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({
-								"cmd": "enable",
-								"nonce": getNonce()
-							})
+							}
 						})
 						.then(res => {
 							(async function () {
@@ -276,14 +262,11 @@ jQuery(function($, undefined) {
 						this.echo(`retrieving information...`);
 						this.pause();
 
-						fetch ("/describe", {
-							method: 'post',
+						fetch (getURL(`describe`, `nonce=${ getNonce() }`), {
+							method: 'get',
 							headers: {
 								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({
-								"nonce": getNonce()
-							})
+							}
 						})
 						.then(res => {
 							(async function () {
@@ -293,9 +276,9 @@ jQuery(function($, undefined) {
 									if (res.error) 
 										main.echo(`fatal: ${res.data.msg}`);
 									else 
-										main.echo(`${res.data.msg}`);
+										main.echo(`Name:    ${res.data.name}`);
+										main.echo(`DID:     ${res.data.did}`);
 										main.echo(`To get more info about Samaritan, see 'sam find <DID>'`);
-									
 								});
 							})();  
 						})
@@ -310,14 +293,11 @@ jQuery(function($, undefined) {
 						this.echo(`refreshing session...`);
 						this.pause();
 
-						fetch ("/refresh", {
-							method: 'post',
+						fetch (getURL(`refresh`, `nonce=${ getNonce() }`), {
+							method: 'get',
 							headers: {
 								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({
-								"nonce": getNonce()
-							})
+							}
 						})
 						.then(res => {
 							(async function () {
@@ -330,7 +310,6 @@ jQuery(function($, undefined) {
 										sessionStorage.setItem("nonce", res.data.nonce);
 										main.echo(`${res.data.msg}`);
 									}
-									
 								});
 							})();  
 						})
@@ -345,14 +324,11 @@ jQuery(function($, undefined) {
 						this.echo(`cleaning up session...`);
 						this.pause();
 
-						fetch ("/exit", {
-							method: 'post',
+						fetch (getURL(`exit`, `nonce=${ getNonce() }`), {
+							method: 'get',
 							headers: {
 								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({
-								"nonce": getNonce()
-							})
+							}
 						})
 						.then(res => {
 							(async function () {
@@ -391,15 +367,11 @@ jQuery(function($, undefined) {
 								this.echo(`setting up...`);
 								this.pause();
 
-								fetch ("/trust", {
-									method: 'post',
+								fetch (getURL(`trust`, `did=${arg2}`, `nonce=${ getNonce() }`), {
+									method: 'get',
 									headers: {
 										'Content-Type': 'application/json'
-									},
-									body: JSON.stringify({
-										"did": arg2,
-										"nonce": getNonce()
-									})
+									}
 								})
 								.then(res => {
 									(async function () {
@@ -427,14 +399,11 @@ jQuery(function($, undefined) {
 						this.echo(`getting ready to list quorum members...`);
 						this.pause();
 
-						fetch ("/enum-quorum", {
-							method: 'post',
+						fetch (getURL(`enum-quorum`, `nonce=${ getNonce() }`), {
+							method: 'get',
 							headers: {
 								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({
-								"nonce": getNonce()
-							})
+							}
 						})
 						.then(res => {
 							(async function () {
@@ -446,9 +415,8 @@ jQuery(function($, undefined) {
 									else {
 										main.echo(`DID list:`)
 										for (var i = 0; i < res.data.list.length; i++) 
-											if (res.data.list[i].indexOf("did:sam:root") != -1)
-												main.echo(`      ${res.data.list[i+1]} - ${res.data.list[i]}`)
-										main.echo(`${res.data.list.length / 2} members retrieved.`)
+											main.echo(`      ${i + 1} -> ${res.data.list[i]}`)
+										main.echo(`${res.data.list.length} members retrieved.`)
 									}
 									
 								});
@@ -475,15 +443,11 @@ jQuery(function($, undefined) {
 								this.echo(`processing...`);
 								this.pause();
 
-								fetch ("/revoke", {
-									method: 'post',
+								fetch (getURL(`revoke`, `did=${arg2}`, `nonce=${ getNonce() }`), {
+									method: 'get',
 									headers: {
 										'Content-Type': 'application/json'
-									},
-									body: JSON.stringify({
-										"did": arg2,
-										"nonce": getNonce()
-									})
+									}
 								})
 								.then(res => {
 									(async function () {
@@ -509,18 +473,13 @@ jQuery(function($, undefined) {
 						main.echo(`fatal: no samaritan initialized. See 'sam help'`)
 					} else {
 						this.echo(`trying to rotate keys...`);
-						setTimeout(main.echo("assigning new mnemonics..."), 7000);
-
 						this.pause();
 
-						fetch ("/rotate", {
-							method: 'post',
+						fetch (getURL(`rotate`, `nonce=${ getNonce() }`), {
+							method: 'get',
 							headers: {
 								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({
-								"nonce": getNonce()
-							})
+							}
 						})
 						.then(res => {
 							(async function () {
@@ -529,16 +488,8 @@ jQuery(function($, undefined) {
 									
 									if (res.error) 
 										main.echo(`fatal: ${res.data.msg}`);
-									else {
-										main.echo(`Keys:    ${res.data.seed} ([[b;red;] You have 30 seconds to copy them.])`);
-
-										main.pause();
-										setTimeout(() => {
-											main.update(-1, "Keys:    ****************************************************************************************************");
-											main.echo("rotation sucessful.").resume();
-										}, 30000);
-									}
-									
+									else
+										main.echo("rotation sucessful.")
 								});
 							})();  
 						})
@@ -546,88 +497,6 @@ jQuery(function($, undefined) {
 
 					break;
 
-				case "del":
-					if (!inSession()) {
-						main.echo(`fatal: no samaritan initialized. See 'sam help'`)
-					} else {
-						if (!arg2 || !isGoodURL(arg2)) {
-							this.echo(`fatal: invalid URI format`);
-							this.echo(`expected URI format: did:sam:root:<address>/r/<number>/<hash>`);
-						} else {
-							this.echo(`trying to delete...`);
-							this.pause();
-
-							fetch ("/del", {
-								method: 'post',
-								headers: {
-									'Content-Type': 'application/json'
-								},
-								body: JSON.stringify({
-									"uri": arg2,
-									"nonce": getNonce()
-								})
-							})
-							.then(res => {
-								(async function () {
-									await res.json().then(res => {
-										main.resume();
-										
-										if (res.error) 
-											main.echo(`fatal: ${res.data.msg}`);
-										else 
-											main.echo(`${res.data.msg}`);
-										
-									});
-								})();  
-							})
-						}
-					}
-
-					break;
-
-				case "chmod":
-					if (!inSession()) {
-						main.echo(`fatal: no samaritan initialized. See 'sam help'`)
-					} else {
-						if (!arg2 || !isGoodMode(arg2)) {	// check for mode
-							this.echo(`fatal: invalid access mode specified`);
-						} else {	// check for URI confromance
-							if (!arg3 || !isGoodURL(arg3)) {
-								this.echo(`fatal: invalid URI format`);
-								this.echo(`expected URI format: did:sam:root:<address>/r/<number>/<hash>`);
-							} else {
-								this.echo(`changing access mode...`);
-								this.pause();
-
-								fetch ("/chmod", {
-									method: 'post',
-									headers: {
-										'Content-Type': 'application/json'
-									},
-									body: JSON.stringify({
-										"mode": arg3,
-										"uri": arg2,
-										"nonce": getNonce()
-									})
-								})
-								.then(res => {
-									(async function () {
-										await res.json().then(res => {
-											main.resume();
-											
-											if (res.error) 
-												main.echo(`fatal: ${res.data.msg}`);
-											else 
-												main.echo(`${res.data.msg}`);
-											
-										});
-									})();  
-								})
-							}
-						}
-					}
-
-					break;
 
 				default:
 					this.echo(`sam: '${arg1}' is not a samaritan command. See 'sam help'.`);
@@ -709,4 +578,27 @@ function isGoodMode(mode) {
 			return false;
 			
 	return true;
+}
+
+function getURL() {
+	let url = `\\${arguments[0]}?`;
+	for (var i = 1; i < arguments.length; i++) 
+		url += `${arguments[i]}&`;
+
+	return url;
+}
+
+var printObj = function(obj) {
+	var string = '';
+
+	for(var prop in obj) {
+		if(typeof obj[prop] == 'string') {
+			string+= prop + ': ' + obj[prop]+'; \n';
+		}
+		else {
+			string+= prop + ': { \n' + print(obj[prop]) + '}';
+		}
+	}
+
+	return string;
 }

@@ -29,7 +29,7 @@ function crust_GetAuthHeader(pair) {
 }
 
 // upload to IPFS gateway
-async function uploadToGateway(path, ipfsGateway) {
+async function uploadToGateway(path, ipfsGateway, authHeader) {
     const ipfs = create({
         url: ipfsGateway + '/api/v0',
         headers: {
@@ -37,7 +37,7 @@ async function uploadToGateway(path, ipfsGateway) {
         }
     });
 
-    const { cid } = await ipfs.add(globSource(path, '**/*'));
+    const { cid } = await ipfs.add(path);
 
     if (cid) {
         return { cid, error: false };
@@ -66,13 +66,14 @@ async function pinIPFSFile(ipfsPinningService, cid, authHeader, name) {
 export async function uploadToCrustNetwork(path, pair, name) {
     let header = crust_GetAuthHeader(pair);
 
-    let data = uploadToGateway(path, 'https://crustwebsites.net');
+    let data = uploadToGateway(path, 'https://crustwebsites.net', header);
 
     if (!data.error) {
         // pin on pinning service
-        let body = pinIPFSFile('https://pin.crustcode.com/psa', (await data).cid, header, name);
+        let body = await pinIPFSFile('https://pin.crustcode.com/psa', (await data).cid, header, name);
 
         if (body) {
+            console.log(body);
             const rid = JSON.parse(body)['requestId'];
             console.log(body, rid);
 
