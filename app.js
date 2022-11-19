@@ -622,4 +622,4 @@ app.post('/vote', (req, res) => {
 // app.listen(port, () => console.info(`Listening on port ${port}`));
 
 // production
-app.listen(process.env.port, () => console.info(`Listening on port ${port}`));
+app.listen(process.env.PORT);
