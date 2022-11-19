@@ -1,1 +1,0 @@
-{"@context":{"@version":1.1,"schema":"http://schema.org/"},"@id":"https://www.freeweb.com","@type":"schema:WebSite","schema:name":"Freeweb","schema:url":"https://www.freeweb.com","schema:about":"A website to advocate for a free & fair web","schema:author":{"@id":"did:sam:root:kjc9y7hm89zmc987mfs879ms0md8m","@type":"schema:Person"}}
