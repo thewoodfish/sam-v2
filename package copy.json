@@ -32,5 +32,8 @@
     "ipfs-http-client": "^59.0.0",
     "it-to-buffer": "^2.0.2"
   },
+  "devDependencies": {
+    "nodemon": "^2.0.19"
+  },
   "type": "module"
 }
