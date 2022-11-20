@@ -46,19 +46,19 @@ const { Keyring } = require('@polkadot/keyring');
 import keyringX from '@polkadot/ui-keyring';
 import {  } from '@polkadot/util-crypto';
 
-// // global
-// const wsProvider = new WsProvider('ws://127.0.0.1:9944');
-// const api = await ApiPromise.create({ provider: wsProvider });
+// global
+const wsProvider = new WsProvider('ws://105.113.19.143:9944');
+const api = await ApiPromise.create({ provider: wsProvider });
 
-// const BOLD_TEXT = "Sacha is a great buddy!";
-// const keyring = new Keyring({ type: 'sr25519' });
+const BOLD_TEXT = "Sacha is a great buddy!";
+const keyring = new Keyring({ type: 'sr25519' });
 
-// const alice = keyring.addFromUri('//Alice');
+const alice = keyring.addFromUri('//Alice');
 
-// cryptoWaitReady().then(() => {
-//     // load all available addresses and accounts
-//     keyringX.loadAll({ ss58Format: 42, type: 'sr25519' });
-//   });
+cryptoWaitReady().then(() => {
+    // load all available addresses and accounts
+    keyringX.loadAll({ ss58Format: 42, type: 'sr25519' });
+  });
 
 // add new samaritan to chain
 async function createSamaritan(req, res) {
