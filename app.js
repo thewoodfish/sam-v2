@@ -47,7 +47,7 @@ import keyringX from '@polkadot/ui-keyring';
 import {  } from '@polkadot/util-crypto';
 
 // global
-const wsProvider = new WsProvider('ws://105.113.19.143:9944');
+const wsProvider = new WsProvider('ws://127.0.0.1:9944');
 const api = await ApiPromise.create({ provider: wsProvider });
 
 const BOLD_TEXT = "Sacha is a great buddy!";
