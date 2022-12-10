@@ -5,15 +5,12 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports._stakerSlashes = _stakerSlashes;
 exports.stakerSlashes = void 0;
-
 var _rxjs = require("rxjs");
-
 var _util = require("../util");
-
 var _util2 = require("./util");
-
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 function _stakerSlashes(instanceId, api) {
   return (0, _util.memo)(instanceId, (accountId, eras, withActive) => {
     const stakerId = api.registry.createType('AccountId', accountId).toString();
@@ -30,6 +27,5 @@ function _stakerSlashes(instanceId, api) {
     })));
   });
 }
-
 const stakerSlashes = (0, _util2.erasHistoricApplyAccount)('_stakerSlashes');
 exports.stakerSlashes = stakerSlashes;

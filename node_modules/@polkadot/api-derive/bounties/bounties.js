@@ -1,9 +1,9 @@
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { combineLatest, map, of, switchMap } from 'rxjs';
 import { memo } from "../util/index.js";
 import { filterBountiesProposals } from "./helpers/filterBountyProposals.js";
-
 function parseResult([maybeBounties, maybeDescriptions, ids, bountyProposals]) {
   const bounties = [];
   maybeBounties.forEach((bounty, index) => {
@@ -18,7 +18,6 @@ function parseResult([maybeBounties, maybeDescriptions, ids, bountyProposals]) {
   });
   return bounties;
 }
-
 export function bounties(instanceId, api) {
   const bountyBase = api.query.bounties || api.query.treasury;
   return memo(instanceId, () => bountyBase.bounties ? combineLatest([bountyBase.bountyCount(), api.query.council ? api.query.council.proposalCount() : of(0)]).pipe(switchMap(() => combineLatest([bountyBase.bounties.keys(), api.derive.council ? api.derive.council.proposals() : of([])])), switchMap(([keys, proposals]) => {

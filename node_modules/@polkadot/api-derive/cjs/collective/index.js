@@ -3,9 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-
 var _members = require("./members");
-
 Object.keys(_members).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (key in exports && exports[key] === _members[key]) return;
@@ -16,9 +14,7 @@ Object.keys(_members).forEach(function (key) {
     }
   });
 });
-
 var _prime = require("./prime");
-
 Object.keys(_prime).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (key in exports && exports[key] === _prime[key]) return;
@@ -29,9 +25,7 @@ Object.keys(_prime).forEach(function (key) {
     }
   });
 });
-
 var _proposals = require("./proposals");
-
 Object.keys(_proposals).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (key in exports && exports[key] === _proposals[key]) return;

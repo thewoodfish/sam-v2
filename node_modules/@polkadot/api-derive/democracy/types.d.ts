@@ -1,10 +1,11 @@
 /// <reference types="bn.js" />
 import type { Vec } from '@polkadot/types';
-import type { AccountId, Balance, BlockNumber, Hash, PropIndex, Proposal, ReferendumIndex, ReferendumInfoTo239, Vote } from '@polkadot/types/interfaces';
+import type { AccountId, Balance, Call, Hash, PropIndex, ReferendumIndex, ReferendumInfoTo239, Vote } from '@polkadot/types/interfaces';
 import type { PalletDemocracyReferendumStatus, PalletDemocracyVoteThreshold } from '@polkadot/types/lookup';
 import type { BN } from '@polkadot/util';
+import type { HexString } from '@polkadot/util/types';
 export interface AtBlock {
-    at: BlockNumber;
+    at: BN;
 }
 export interface DeriveDemocracyLock {
     balance: Balance;
@@ -17,12 +18,14 @@ export interface DeriveDemocracyLock {
 }
 export interface DeriveProposalImage extends AtBlock {
     balance: Balance;
-    proposal?: Proposal;
+    proposal?: Call;
+    proposalHash?: HexString;
+    proposalLen?: number;
     proposer: AccountId;
 }
 export interface DeriveDispatch extends AtBlock {
     index: ReferendumIndex;
-    imageHash: Hash;
+    imageHash: HexString;
     image?: DeriveProposalImage;
 }
 export interface DeriveProposal {
@@ -35,13 +38,13 @@ export interface DeriveProposal {
 }
 export interface DeriveProposalExternal {
     image?: DeriveProposalImage;
-    imageHash: Hash;
+    imageHash: HexString;
     threshold: PalletDemocracyVoteThreshold;
 }
 export interface DeriveReferendum {
     index: ReferendumIndex;
     image?: DeriveProposalImage;
-    imageHash: Hash;
+    imageHash: HexString;
     status: PalletDemocracyReferendumStatus | ReferendumInfoTo239;
 }
 export interface DeriveReferendumVote {

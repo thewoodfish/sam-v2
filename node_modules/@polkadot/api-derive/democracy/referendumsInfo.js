@@ -1,10 +1,10 @@
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { combineLatest, map, of, switchMap } from 'rxjs';
 import { isFunction, objectSpread } from '@polkadot/util';
 import { memo } from "../util/index.js";
-import { calcVotes, getStatus } from "./util.js";
-
+import { calcVotes, getImageHash, getStatus } from "./util.js";
 function votesPrev(api, referendumId) {
   return api.query.democracy.votersFor(referendumId).pipe(switchMap(votersFor => combineLatest([of(votersFor), votersFor.length ? api.query.democracy.voteOf.multi(votersFor.map(accountId => [referendumId, accountId])) : of([]), api.derive.balances.votingBalances(votersFor)])), map(([votersFor, votes, balances]) => votersFor.map((accountId, index) => ({
     accountId,
@@ -13,9 +13,9 @@ function votesPrev(api, referendumId) {
     vote: votes[index] || api.registry.createType('Vote')
   }))));
 }
-
 function extractVotes(mapped, referendumId) {
-  return mapped.filter(([, voting]) => voting.isDirect).map(([accountId, voting]) => [accountId, voting.asDirect.votes.filter(([idx]) => idx.eq(referendumId))]).filter(([, directVotes]) => !!directVotes.length).reduce((result, [accountId, votes]) => // FIXME We are ignoring split votes
+  return mapped.filter(([, voting]) => voting.isDirect).map(([accountId, voting]) => [accountId, voting.asDirect.votes.filter(([idx]) => idx.eq(referendumId))]).filter(([, directVotes]) => !!directVotes.length).reduce((result, [accountId, votes]) =>
+  // FIXME We are ignoring split votes
   votes.reduce((result, [, vote]) => {
     if (vote.isStandard) {
       result.push(objectSpread({
@@ -23,19 +23,18 @@ function extractVotes(mapped, referendumId) {
         isDelegating: false
       }, vote.asStandard));
     }
-
     return result;
   }, result), []);
 }
-
 function votesCurr(api, referendumId) {
   return api.query.democracy.votingOf.entries().pipe(map(allVoting => {
     const mapped = allVoting.map(([{
       args: [accountId]
     }, voting]) => [accountId, voting]);
     const votes = extractVotes(mapped, referendumId);
-    const delegations = mapped.filter(([, voting]) => voting.isDelegating).map(([accountId, voting]) => [accountId, voting.asDelegating]); // add delegations
+    const delegations = mapped.filter(([, voting]) => voting.isDelegating).map(([accountId, voting]) => [accountId, voting.asDelegating]);
 
+    // add delegations
     delegations.forEach(([accountId, {
       balance,
       conviction,
@@ -45,8 +44,9 @@ function votesCurr(api, referendumId) {
       const toDelegator = delegations.find(([accountId]) => accountId.eq(target));
       const to = votes.find(({
         accountId
-      }) => accountId.eq(toDelegator ? toDelegator[0] : target)); // this delegation has a target
+      }) => accountId.eq(toDelegator ? toDelegator[0] : target));
 
+      // this delegation has a target
       if (to) {
         votes.push({
           accountId,
@@ -62,7 +62,6 @@ function votesCurr(api, referendumId) {
     return votes;
   }));
 }
-
 export function _referendumVotes(instanceId, api) {
   return memo(instanceId, referendum => combineLatest([api.derive.democracy.sqrtElectorate(), isFunction(api.query.democracy.votingOf) ? votesCurr(api, referendum.index) : votesPrev(api, referendum.index)]).pipe(map(([sqrtElectorate, votes]) => calcVotes(sqrtElectorate, referendum, votes))));
 }
@@ -72,14 +71,14 @@ export function _referendumsVotes(instanceId, api) {
 export function _referendumInfo(instanceId, api) {
   return memo(instanceId, (index, info) => {
     const status = getStatus(info);
-    return status ? api.derive.democracy.preimage(status.proposalHash).pipe(map(image => ({
+    return status ? api.derive.democracy.preimage(status.proposal || status.proposalHash).pipe(map(image => ({
       image,
-      imageHash: status.proposalHash,
+      imageHash: getImageHash(status),
       index: api.registry.createType('ReferendumIndex', index),
       status
     }))) : of(null);
   });
 }
 export function referendumsInfo(instanceId, api) {
-  return memo(instanceId, ids => ids.length ? api.query.democracy.referendumInfoOf.multi(ids).pipe(switchMap(infos => combineLatest(ids.map((id, index) => api.derive.democracy._referendumInfo(id, infos[index])))), map(infos => infos.filter(referendum => !!referendum))) : of([]));
+  return memo(instanceId, ids => ids.length ? api.query.democracy.referendumInfoOf.multi(ids).pipe(switchMap(infos => combineLatest(ids.map((id, index) => api.derive.democracy._referendumInfo(id, infos[index])))), map(infos => infos.filter(r => !!r))) : of([]));
 }

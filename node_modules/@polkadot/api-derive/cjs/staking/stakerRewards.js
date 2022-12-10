@@ -8,15 +8,12 @@ exports._stakerRewardsEras = _stakerRewardsEras;
 exports.stakerRewards = void 0;
 exports.stakerRewardsMulti = stakerRewardsMulti;
 exports.stakerRewardsMultiEras = stakerRewardsMultiEras;
-
 var _rxjs = require("rxjs");
-
 var _util = require("@polkadot/util");
-
 var _util2 = require("../util");
-
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 function parseRewards(api, stashId, _ref, exposures) {
   let [erasPoints, erasPrefs, erasRewards] = _ref;
   return exposures.map(_ref2 => {
@@ -48,19 +45,16 @@ function parseRewards(api, stashId, _ref, exposures) {
     const stakerId = stashId.toString();
     Object.entries(eraValidators).forEach(_ref3 => {
       var _allValPrefs$validato, _exposure$total;
-
       let [validatorId, exposure] = _ref3;
       const valPoints = allValPoints[validatorId] || _util.BN_ZERO;
-      const valComm = ((_allValPrefs$validato = allValPrefs[validatorId]) === null || _allValPrefs$validato === void 0 ? void 0 : _allValPrefs$validato.commission.unwrap()) || _util.BN_ZERO;
-      const expTotal = ((_exposure$total = exposure.total) === null || _exposure$total === void 0 ? void 0 : _exposure$total.unwrap()) || _util.BN_ZERO;
+      const valComm = ((_allValPrefs$validato = allValPrefs[validatorId]) == null ? void 0 : _allValPrefs$validato.commission.unwrap()) || _util.BN_ZERO;
+      const expTotal = ((_exposure$total = exposure.total) == null ? void 0 : _exposure$total.unwrap()) || _util.BN_ZERO;
       let avail = _util.BN_ZERO;
       let value;
-
       if (!(expTotal.isZero() || valPoints.isZero() || eraPoints.isZero())) {
         avail = eraReward.mul(valPoints).div(eraPoints);
         const valCut = valComm.mul(avail).div(_util.BN_BILLION);
         let staked;
-
         if (validatorId === stakerId) {
           staked = exposure.own.unwrap();
         } else {
@@ -72,10 +66,8 @@ function parseRewards(api, stashId, _ref, exposures) {
           });
           staked = stakerExp ? stakerExp.value.unwrap() : _util.BN_ZERO;
         }
-
         value = avail.sub(valCut).imul(staked).div(expTotal).iadd(validatorId === stakerId ? valCut : _util.BN_ZERO);
       }
-
       validators[validatorId] = {
         total: api.registry.createType('Balance', avail),
         value: api.registry.createType('Balance', value)
@@ -91,7 +83,6 @@ function parseRewards(api, stashId, _ref, exposures) {
     };
   });
 }
-
 function allUniqValidators(rewards) {
   return rewards.reduce((_ref5, rewards) => {
     let [all, perStash] = _ref5;
@@ -104,7 +95,6 @@ function allUniqValidators(rewards) {
       return Object.keys(validators).forEach(validatorId => {
         if (!uniq.includes(validatorId)) {
           uniq.push(validatorId);
-
           if (!all.includes(validatorId)) {
             all.push(validatorId);
           }
@@ -114,16 +104,13 @@ function allUniqValidators(rewards) {
     return [all, perStash];
   }, [[], []]);
 }
-
 function removeClaimed(validators, queryValidators, reward) {
   const rm = [];
   Object.keys(reward.validators).forEach(validatorId => {
     const index = validators.indexOf(validatorId);
-
     if (index !== -1) {
       const valLedger = queryValidators[index].stakingLedger;
-
-      if (valLedger !== null && valLedger !== void 0 && valLedger.claimedRewards.some(e => reward.era.eq(e))) {
+      if (valLedger != null && valLedger.claimedRewards.some(e => reward.era.eq(e))) {
         rm.push(validatorId);
       }
     }
@@ -132,7 +119,6 @@ function removeClaimed(validators, queryValidators, reward) {
     delete reward.validators[validatorId];
   });
 }
-
 function filterRewards(eras, valInfo, _ref7) {
   let {
     rewards,
@@ -156,7 +142,6 @@ function filterRewards(eras, valInfo, _ref7) {
     if (!filter.some(e => reward.era.eq(e))) {
       return false;
     }
-
     removeClaimed(validators, queryValidators, reward);
     return true;
   }).filter(_ref11 => {
@@ -168,14 +153,12 @@ function filterRewards(eras, valInfo, _ref7) {
     nominators: reward.nominating.filter(n => reward.validators[n.validatorId])
   }));
 }
-
 function _stakerRewardsEras(instanceId, api) {
   return (0, _util2.memo)(instanceId, function (eras) {
     let withActive = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
     return (0, _rxjs.combineLatest)([api.derive.staking._erasPoints(eras, withActive), api.derive.staking._erasPrefs(eras, withActive), api.derive.staking._erasRewards(eras, withActive)]);
   });
 }
-
 function _stakerRewards(instanceId, api) {
   return (0, _util2.memo)(instanceId, function (accountIds, eras) {
     let withActive = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
@@ -190,11 +173,9 @@ function _stakerRewards(instanceId, api) {
         } = _ref13;
         return !stashId || !stakingLedger ? [] : parseRewards(api, stashId, erasResult, exposures[index]);
       });
-
       if (withActive) {
         return (0, _rxjs.of)(allRewards);
       }
-
       const [allValidators, stashValidators] = allUniqValidators(allRewards);
       return api.derive.staking.queryMulti(allValidators, {
         withLedger: true
@@ -210,14 +191,11 @@ function _stakerRewards(instanceId, api) {
     }));
   });
 }
-
 const stakerRewards = (0, _util2.firstMemo)((api, accountId, withActive) => api.derive.staking.erasHistoric(withActive).pipe((0, _rxjs.switchMap)(eras => api.derive.staking._stakerRewards([accountId], eras, withActive))));
 exports.stakerRewards = stakerRewards;
-
 function stakerRewardsMultiEras(instanceId, api) {
   return (0, _util2.memo)(instanceId, (accountIds, eras) => accountIds.length && eras.length ? api.derive.staking._stakerRewards(accountIds, eras, false) : (0, _rxjs.of)([]));
 }
-
 function stakerRewardsMulti(instanceId, api) {
   return (0, _util2.memo)(instanceId, function (accountIds) {
     let withActive = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;

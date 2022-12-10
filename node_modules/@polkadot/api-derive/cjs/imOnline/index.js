@@ -3,9 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-
 var _receivedHeartbeats = require("./receivedHeartbeats");
-
 Object.keys(_receivedHeartbeats).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (key in exports && exports[key] === _receivedHeartbeats[key]) return;

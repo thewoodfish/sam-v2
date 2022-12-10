@@ -19,11 +19,8 @@ Object.defineProperty(exports, "memo", {
     return _rpcCore.memo;
   }
 });
-
 var _rpcCore = require("@polkadot/rpc-core");
-
 var _approvalFlagsToBools = require("./approvalFlagsToBools");
-
 Object.keys(_approvalFlagsToBools).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -35,9 +32,7 @@ Object.keys(_approvalFlagsToBools).forEach(function (key) {
     }
   });
 });
-
 var _blockNumber = require("./blockNumber");
-
 Object.keys(_blockNumber).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -49,9 +44,7 @@ Object.keys(_blockNumber).forEach(function (key) {
     }
   });
 });
-
 var _cache = require("./cache");
-
 Object.keys(_cache).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -63,9 +56,7 @@ Object.keys(_cache).forEach(function (key) {
     }
   });
 });
-
 var _cacheImpl = require("./cacheImpl");
-
 Object.keys(_cacheImpl).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -77,9 +68,7 @@ Object.keys(_cacheImpl).forEach(function (key) {
     }
   });
 });
-
 var _first = require("./first");
-
 Object.keys(_first).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -91,9 +80,7 @@ Object.keys(_first).forEach(function (key) {
     }
   });
 });
-
 var _lazy = require("./lazy");
-
 Object.keys(_lazy).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;

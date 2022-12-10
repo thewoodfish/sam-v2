@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.deriveNoopCache = exports.deriveMapCache = void 0;
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 const mapCache = new Map();
 const deriveMapCache = {
   del: key => {

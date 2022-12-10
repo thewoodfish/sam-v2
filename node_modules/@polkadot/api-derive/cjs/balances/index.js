@@ -14,11 +14,8 @@ Object.defineProperty(exports, "all", {
   }
 });
 exports.votingBalance = void 0;
-
 var _all = require("./all");
-
 var _account = require("./account");
-
 Object.keys(_account).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -30,9 +27,7 @@ Object.keys(_account).forEach(function (key) {
     }
   });
 });
-
 var _votingBalances = require("./votingBalances");
-
 Object.keys(_votingBalances).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -46,5 +41,6 @@ Object.keys(_votingBalances).forEach(function (key) {
 });
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 const votingBalance = _all.all;
 exports.votingBalance = votingBalance;

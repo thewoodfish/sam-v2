@@ -4,23 +4,18 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.all = all;
-
 var _rxjs = require("rxjs");
-
 var _util = require("@polkadot/util");
-
 var _util2 = require("../util");
-
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-const VESTING_ID = '0x76657374696e6720';
 
+const VESTING_ID = '0x76657374696e6720';
 function calcLocked(api, bestNumber, locks) {
   let lockedBalance = api.registry.createType('Balance');
   let lockedBreakdown = [];
   let vestingLocked = api.registry.createType('Balance');
   let allLocked = false;
-
   if (Array.isArray(locks)) {
     // only get the locks that are valid until passed the current block
     lockedBreakdown = locks.filter(_ref => {
@@ -45,15 +40,15 @@ function calcLocked(api, bestNumber, locks) {
         amount
       } = _ref4;
       return result.iadd(amount);
-    }, new _util.BN(0))); // get the maximum of the locks according to https://github.com/paritytech/substrate/blob/master/srml/balances/src/lib.rs#L699
+    }, new _util.BN(0)));
 
+    // get the maximum of the locks according to https://github.com/paritytech/substrate/blob/master/srml/balances/src/lib.rs#L699
     const notAll = lockedBreakdown.filter(_ref5 => {
       let {
         amount
       } = _ref5;
       return amount && !amount.isMax();
     });
-
     if (notAll.length) {
       lockedBalance = api.registry.createType('Balance', (0, _util.bnMax)(...notAll.map(_ref6 => {
         let {
@@ -63,7 +58,6 @@ function calcLocked(api, bestNumber, locks) {
       })));
     }
   }
-
   return {
     allLocked,
     lockedBalance,
@@ -71,7 +65,6 @@ function calcLocked(api, bestNumber, locks) {
     vestingLocked
   };
 }
-
 function calcShared(api, bestNumber, data, locks) {
   const {
     allLocked,
@@ -86,7 +79,6 @@ function calcShared(api, bestNumber, data, locks) {
     vestingLocked
   });
 }
-
 function calcVesting(bestNumber, shared, _vesting) {
   // Calculate the vesting balances,
   //  - offset = balance locked at startingBlock
@@ -134,7 +126,6 @@ function calcVesting(bestNumber, shared, _vesting) {
     vestingTotal
   };
 }
-
 function calcBalances(api, _ref11) {
   let [data, [vesting, allLocks, namedReserves], bestNumber] = _ref11;
   const shared = calcShared(api, bestNumber, data, allLocks[0]);
@@ -144,14 +135,13 @@ function calcBalances(api, _ref11) {
     additional: allLocks.slice(1).map((l, index) => calcShared(api, bestNumber, data.additional[index], l)),
     namedReserves
   });
-} // old
+}
 
-
+// old
 function queryOld(api, accountId) {
   return (0, _rxjs.combineLatest)([api.query.balances.locks(accountId), api.query.balances.vesting(accountId)]).pipe((0, _rxjs.map)(_ref12 => {
     let [locks, optVesting] = _ref12;
     let vestingNew = null;
-
     if (optVesting.isSome) {
       const {
         offset: locked,
@@ -164,33 +154,27 @@ function queryOld(api, accountId) {
         startingBlock
       });
     }
-
     return [vestingNew ? [vestingNew] : null, [locks], []];
   }));
 }
-
 const isNonNullable = nullable => !!nullable;
-
 function createCalls(calls) {
   return [calls.map(c => !c), calls.filter(isNonNullable)];
-} // current (balances, vesting)
+}
 
-
+// current (balances, vesting)
 function queryCurrent(api, accountId) {
   var _api$query$vesting;
-
   let balanceInstances = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : ['balances'];
   const [lockEmpty, lockQueries] = createCalls(balanceInstances.map(m => {
     var _m, _api$query;
-
-    return ((_m = api.derive[m]) === null || _m === void 0 ? void 0 : _m.customLocks) || ((_api$query = api.query[m]) === null || _api$query === void 0 ? void 0 : _api$query.locks);
+    return ((_m = api.derive[m]) == null ? void 0 : _m.customLocks) || ((_api$query = api.query[m]) == null ? void 0 : _api$query.locks);
   }));
   const [reserveEmpty, reserveQueries] = createCalls(balanceInstances.map(m => {
     var _api$query2;
-
-    return (_api$query2 = api.query[m]) === null || _api$query2 === void 0 ? void 0 : _api$query2.reserves;
+    return (_api$query2 = api.query[m]) == null ? void 0 : _api$query2.reserves;
   }));
-  return (0, _rxjs.combineLatest)([(_api$query$vesting = api.query.vesting) !== null && _api$query$vesting !== void 0 && _api$query$vesting.vesting ? api.query.vesting.vesting(accountId) : (0, _rxjs.of)(api.registry.createType('Option<VestingInfo>')), lockQueries.length ? (0, _rxjs.combineLatest)(lockQueries.map(c => c(accountId))) : (0, _rxjs.of)([]), reserveQueries.length ? (0, _rxjs.combineLatest)(reserveQueries.map(c => c(accountId))) : (0, _rxjs.of)([])]).pipe((0, _rxjs.map)(_ref13 => {
+  return (0, _rxjs.combineLatest)([(_api$query$vesting = api.query.vesting) != null && _api$query$vesting.vesting ? api.query.vesting.vesting(accountId) : (0, _rxjs.of)(api.registry.createType('Option<VestingInfo>')), lockQueries.length ? (0, _rxjs.combineLatest)(lockQueries.map(c => c(accountId))) : (0, _rxjs.of)([]), reserveQueries.length ? (0, _rxjs.combineLatest)(reserveQueries.map(c => c(accountId))) : (0, _rxjs.of)([])]).pipe((0, _rxjs.map)(_ref13 => {
     let [opt, locks, reserves] = _ref13;
     let offsetLock = -1;
     let offsetReserve = -1;
@@ -198,6 +182,7 @@ function queryCurrent(api, accountId) {
     return [vesting ? Array.isArray(vesting) ? vesting : [vesting] : null, lockEmpty.map(e => e ? api.registry.createType('Vec<BalanceLock>') : locks[++offsetLock]), reserveEmpty.map(e => e ? api.registry.createType('Vec<PalletBalancesReserveData>') : reserves[++offsetReserve])];
   }));
 }
+
 /**
  * @name all
  * @param {( AccountIndex | AccountId | Address | string )} address - An accounts Id in different formats.
@@ -213,14 +198,11 @@ function queryCurrent(api, accountId) {
  * });
  * ```
  */
-
-
 function all(instanceId, api) {
   const balanceInstances = api.registry.getModuleInstances(api.runtimeVersion.specName, 'balances');
   return (0, _util2.memo)(instanceId, address => {
     var _api$query$system, _api$query$balances;
-
-    return (0, _rxjs.combineLatest)([api.derive.balances.account(address), (0, _util.isFunction)((_api$query$system = api.query.system) === null || _api$query$system === void 0 ? void 0 : _api$query$system.account) || (0, _util.isFunction)((_api$query$balances = api.query.balances) === null || _api$query$balances === void 0 ? void 0 : _api$query$balances.account) ? queryCurrent(api, address, balanceInstances) : queryOld(api, address)]).pipe((0, _rxjs.switchMap)(_ref14 => {
+    return (0, _rxjs.combineLatest)([api.derive.balances.account(address), (0, _util.isFunction)((_api$query$system = api.query.system) == null ? void 0 : _api$query$system.account) || (0, _util.isFunction)((_api$query$balances = api.query.balances) == null ? void 0 : _api$query$balances.account) ? queryCurrent(api, address, balanceInstances) : queryOld(api, address)]).pipe((0, _rxjs.switchMap)(_ref14 => {
       let [account, locks] = _ref14;
       return (0, _rxjs.combineLatest)([(0, _rxjs.of)(account), (0, _rxjs.of)(locks), api.derive.chain.bestNumber()]);
     }), (0, _rxjs.map)(result => calcBalances(api, result)));

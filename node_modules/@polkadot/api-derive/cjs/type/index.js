@@ -15,7 +15,5 @@ Object.defineProperty(exports, "createSignedBlockExtended", {
     return _SignedBlockExtended.createSignedBlockExtended;
   }
 });
-
 var _HeaderExtended = require("./HeaderExtended");
-
 var _SignedBlockExtended = require("./SignedBlockExtended");

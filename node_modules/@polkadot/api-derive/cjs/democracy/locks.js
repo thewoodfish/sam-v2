@@ -4,17 +4,13 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.locks = locks;
-
 var _rxjs = require("rxjs");
-
 var _util = require("@polkadot/util");
-
 var _util2 = require("../util");
-
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-const LOCKUPS = [0, 1, 2, 4, 8, 16, 32];
 
+const LOCKUPS = [0, 1, 2, 4, 8, 16, 32];
 function parseEnd(api, vote, _ref) {
   let {
     approved,
@@ -22,7 +18,6 @@ function parseEnd(api, vote, _ref) {
   } = _ref;
   return [end, approved.isTrue && vote.isAye || approved.isFalse && vote.isNay ? end.add((api.consts.democracy.voteLockingPeriod || api.consts.democracy.enactmentPeriod).muln(LOCKUPS[vote.conviction.index])) : _util.BN_ZERO];
 }
-
 function parseLock(api, _ref2, referendum) {
   let [referendumId, accountVote] = _ref2;
   const {
@@ -40,7 +35,6 @@ function parseLock(api, _ref2, referendum) {
     vote
   };
 }
-
 function delegateLocks(api, _ref3) {
   let {
     balance,
@@ -69,16 +63,13 @@ function delegateLocks(api, _ref3) {
     };
   })));
 }
-
 function directLocks(api, _ref5) {
   let {
     votes
   } = _ref5;
-
   if (!votes.length) {
     return (0, _rxjs.of)([]);
   }
-
   return api.query.democracy.referendumInfoOf.multi(votes.map(_ref6 => {
     let [referendumId] = _ref6;
     return referendumId;
@@ -87,7 +78,6 @@ function directLocks(api, _ref5) {
     return parseLock(api, directVote, referendum);
   })));
 }
-
 function locks(instanceId, api) {
   return (0, _util2.memo)(instanceId, accountId => api.query.democracy.votingOf ? api.query.democracy.votingOf(accountId).pipe((0, _rxjs.switchMap)(voting => voting.isDirect ? directLocks(api, voting.asDirect) : voting.isDelegating ? delegateLocks(api, voting.asDelegating) : (0, _rxjs.of)([]))) : (0, _rxjs.of)([]));
 }

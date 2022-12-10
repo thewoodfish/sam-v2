@@ -1,7 +1,8 @@
 /// <reference types="bn.js" />
-import type { ReferendumInfoTo239 } from '@polkadot/types/interfaces';
-import type { PalletDemocracyReferendumInfo, PalletDemocracyReferendumStatus, PalletDemocracyVoteThreshold } from '@polkadot/types/lookup';
+import type { Hash, ReferendumInfoTo239 } from '@polkadot/types/interfaces';
+import type { FrameSupportPreimagesBounded, PalletDemocracyReferendumInfo, PalletDemocracyReferendumStatus, PalletDemocracyVoteThreshold } from '@polkadot/types/lookup';
 import type { Option } from '@polkadot/types-codec';
+import type { HexString } from '@polkadot/util/types';
 import type { DeriveReferendum, DeriveReferendumVote, DeriveReferendumVotes } from '../types';
 import { BN } from '@polkadot/util';
 interface ApproxState {
@@ -13,4 +14,6 @@ export declare function compareRationals(n1: BN, d1: BN, n2: BN, d2: BN): boolea
 export declare function calcPassing(threshold: PalletDemocracyVoteThreshold, sqrtElectorate: BN, state: ApproxState): boolean;
 export declare function calcVotes(sqrtElectorate: BN, referendum: DeriveReferendum, votes: DeriveReferendumVote[]): DeriveReferendumVotes;
 export declare function getStatus(info: Option<PalletDemocracyReferendumInfo | ReferendumInfoTo239>): PalletDemocracyReferendumStatus | ReferendumInfoTo239 | null;
+export declare function getImageHashBounded(hash: Hash | FrameSupportPreimagesBounded): HexString;
+export declare function getImageHash(status: PalletDemocracyReferendumStatus | ReferendumInfoTo239): HexString;
 export {};

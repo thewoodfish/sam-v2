@@ -1,5 +1,6 @@
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import * as accounts from "./accounts/index.js";
 import * as alliance from "./alliance/index.js";
 import * as bagsList from "./bagsList/index.js";

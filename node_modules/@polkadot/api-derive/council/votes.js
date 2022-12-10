@@ -1,24 +1,24 @@
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { combineLatest, map, of } from 'rxjs';
-import { memo } from "../util/index.js"; // Voter is current tuple is 2.x-era
+import { memo } from "../util/index.js";
+
+// Voter is current tuple is 2.x-era
 
 function isVoter(value) {
   return !Array.isArray(value);
 }
-
 function retrieveStakeOf(elections) {
   return elections.stakeOf.entries().pipe(map(entries => entries.map(([{
     args: [accountId]
   }, stake]) => [accountId, stake])));
 }
-
 function retrieveVoteOf(elections) {
   return elections.votesOf.entries().pipe(map(entries => entries.map(([{
     args: [accountId]
   }, votes]) => [accountId, votes])));
 }
-
 function retrievePrev(api, elections) {
   return combineLatest([retrieveStakeOf(elections), retrieveVoteOf(elections)]).pipe(map(([stakes, votes]) => {
     const result = [];
@@ -30,7 +30,6 @@ function retrievePrev(api, elections) {
     });
     stakes.forEach(([staker, stake]) => {
       const entry = result.find(([voter]) => voter.eq(staker));
-
       if (entry) {
         entry[1].stake = stake;
       } else {
@@ -43,7 +42,6 @@ function retrievePrev(api, elections) {
     return result;
   }));
 }
-
 function retrieveCurrent(elections) {
   return elections.voting.entries().pipe(map(entries => entries.map(([{
     args: [accountId]
@@ -55,7 +53,6 @@ function retrieveCurrent(elections) {
     votes: value[1]
   }])));
 }
-
 export function votes(instanceId, api) {
   const elections = api.query.phragmenElection || api.query.electionsPhragmen || api.query.elections;
   return memo(instanceId, () => elections ? elections.stakeOf ? retrievePrev(api, elections) : retrieveCurrent(elections) : of([]));

@@ -7,17 +7,13 @@ exports._referendumInfo = _referendumInfo;
 exports._referendumVotes = _referendumVotes;
 exports._referendumsVotes = _referendumsVotes;
 exports.referendumsInfo = referendumsInfo;
-
 var _rxjs = require("rxjs");
-
 var _util = require("@polkadot/util");
-
 var _util2 = require("../util");
-
 var _util3 = require("./util");
-
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 function votesPrev(api, referendumId) {
   return api.query.democracy.votersFor(referendumId).pipe((0, _rxjs.switchMap)(votersFor => (0, _rxjs.combineLatest)([(0, _rxjs.of)(votersFor), votersFor.length ? api.query.democracy.voteOf.multi(votersFor.map(accountId => [referendumId, accountId])) : (0, _rxjs.of)([]), api.derive.balances.votingBalances(votersFor)])), (0, _rxjs.map)(_ref => {
     let [votersFor, votes, balances] = _ref;
@@ -29,7 +25,6 @@ function votesPrev(api, referendumId) {
     }));
   }));
 }
-
 function extractVotes(mapped, referendumId) {
   return mapped.filter(_ref2 => {
     let [, voting] = _ref2;
@@ -45,23 +40,21 @@ function extractVotes(mapped, referendumId) {
     return !!directVotes.length;
   }).reduce((result, _ref6) => {
     let [accountId, votes] = _ref6;
-    return (// FIXME We are ignoring split votes
+    return (
+      // FIXME We are ignoring split votes
       votes.reduce((result, _ref7) => {
         let [, vote] = _ref7;
-
         if (vote.isStandard) {
           result.push((0, _util.objectSpread)({
             accountId,
             isDelegating: false
           }, vote.asStandard));
         }
-
         return result;
       }, result)
     );
   }, []);
 }
-
 function votesCurr(api, referendumId) {
   return api.query.democracy.votingOf.entries().pipe((0, _rxjs.map)(allVoting => {
     const mapped = allVoting.map(_ref8 => {
@@ -77,8 +70,9 @@ function votesCurr(api, referendumId) {
     }).map(_ref10 => {
       let [accountId, voting] = _ref10;
       return [accountId, voting.asDelegating];
-    }); // add delegations
+    });
 
+    // add delegations
     delegations.forEach(_ref11 => {
       let [accountId, {
         balance,
@@ -95,8 +89,9 @@ function votesCurr(api, referendumId) {
           accountId
         } = _ref13;
         return accountId.eq(toDelegator ? toDelegator[0] : target);
-      }); // this delegation has a target
+      });
 
+      // this delegation has a target
       if (to) {
         votes.push({
           accountId,
@@ -112,30 +107,26 @@ function votesCurr(api, referendumId) {
     return votes;
   }));
 }
-
 function _referendumVotes(instanceId, api) {
   return (0, _util2.memo)(instanceId, referendum => (0, _rxjs.combineLatest)([api.derive.democracy.sqrtElectorate(), (0, _util.isFunction)(api.query.democracy.votingOf) ? votesCurr(api, referendum.index) : votesPrev(api, referendum.index)]).pipe((0, _rxjs.map)(_ref14 => {
     let [sqrtElectorate, votes] = _ref14;
     return (0, _util3.calcVotes)(sqrtElectorate, referendum, votes);
   })));
 }
-
 function _referendumsVotes(instanceId, api) {
   return (0, _util2.memo)(instanceId, referendums => referendums.length ? (0, _rxjs.combineLatest)(referendums.map(referendum => api.derive.democracy._referendumVotes(referendum))) : (0, _rxjs.of)([]));
 }
-
 function _referendumInfo(instanceId, api) {
   return (0, _util2.memo)(instanceId, (index, info) => {
     const status = (0, _util3.getStatus)(info);
-    return status ? api.derive.democracy.preimage(status.proposalHash).pipe((0, _rxjs.map)(image => ({
+    return status ? api.derive.democracy.preimage(status.proposal || status.proposalHash).pipe((0, _rxjs.map)(image => ({
       image,
-      imageHash: status.proposalHash,
+      imageHash: (0, _util3.getImageHash)(status),
       index: api.registry.createType('ReferendumIndex', index),
       status
     }))) : (0, _rxjs.of)(null);
   });
 }
-
 function referendumsInfo(instanceId, api) {
-  return (0, _util2.memo)(instanceId, ids => ids.length ? api.query.democracy.referendumInfoOf.multi(ids).pipe((0, _rxjs.switchMap)(infos => (0, _rxjs.combineLatest)(ids.map((id, index) => api.derive.democracy._referendumInfo(id, infos[index])))), (0, _rxjs.map)(infos => infos.filter(referendum => !!referendum))) : (0, _rxjs.of)([]));
+  return (0, _util2.memo)(instanceId, ids => ids.length ? api.query.democracy.referendumInfoOf.multi(ids).pipe((0, _rxjs.switchMap)(infos => (0, _rxjs.combineLatest)(ids.map((id, index) => api.derive.democracy._referendumInfo(id, infos[index])))), (0, _rxjs.map)(infos => infos.filter(r => !!r))) : (0, _rxjs.of)([]));
 }

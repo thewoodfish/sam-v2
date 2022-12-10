@@ -4,13 +4,11 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.proposals = proposals;
-
 var _rxjs = require("rxjs");
-
 var _util = require("../util");
-
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 function parseResult(api, _ref) {
   let {
     allIds,
@@ -41,7 +39,6 @@ function parseResult(api, _ref) {
         id,
         proposal: allProposals[index].unwrap()
       };
-
       if (isApproval) {
         approvals.push(derived);
       } else {
@@ -55,17 +52,14 @@ function parseResult(api, _ref) {
     proposals
   };
 }
-
 function retrieveProposals(api, proposalCount, approvalIds) {
   const proposalIds = [];
   const count = proposalCount.toNumber();
-
   for (let index = 0; index < count; index++) {
     if (!approvalIds.some(id => id.eqn(index))) {
       proposalIds.push(api.registry.createType('ProposalIndex', index));
     }
   }
-
   const allIds = [...proposalIds, ...approvalIds];
   return (0, _rxjs.combineLatest)([api.query.treasury.proposals.multi(allIds), api.derive.council ? api.derive.council.proposals() : (0, _rxjs.of)([])]).pipe((0, _rxjs.map)(_ref4 => {
     let [allProposals, councilProposals] = _ref4;
@@ -78,11 +72,10 @@ function retrieveProposals(api, proposalCount, approvalIds) {
     });
   }));
 }
+
 /**
  * @description Retrieve all active and approved treasury proposals, along with their info
  */
-
-
 function proposals(instanceId, api) {
   return (0, _util.memo)(instanceId, () => api.query.treasury ? (0, _rxjs.combineLatest)([api.query.treasury.proposalCount(), api.query.treasury.approvals()]).pipe((0, _rxjs.switchMap)(_ref5 => {
     let [proposalCount, approvalIds] = _ref5;

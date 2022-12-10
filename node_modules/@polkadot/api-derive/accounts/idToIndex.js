@@ -1,7 +1,9 @@
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { map } from 'rxjs';
 import { memo } from "../util/index.js";
+
 /**
  * @name idToIndex
  * @param {( AccountId | string )} accountId - An accounts Id in different formats.
@@ -16,7 +18,6 @@ import { memo } from "../util/index.js";
  * });
  * ```
  */
-
 export function idToIndex(instanceId, api) {
   return memo(instanceId, accountId => api.derive.accounts.indexes().pipe(map(indexes => (indexes || {})[accountId.toString()])));
 }

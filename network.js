@@ -21,8 +21,11 @@ import * as storg from "./storage.js";
 
 const HASH_KEY = "j";
 
-export function createRootDID(address) {
-    return `did:sam:root:${address}`;
+export function createRootDID(address, did="") {
+    if (!did)
+        return `did:sam:root:${address}`;
+    else
+        return `did:sam:app:${address}`;
 }
 
 export function signMsg(pair, str) {
@@ -34,11 +37,29 @@ export function signMsg(pair, str) {
 export function createDIDDoc(did, pair, nonce=0) {
     let json = {
         "@context": [
-            "https://www.w3.org/ns/did/v1",
-            "https://www.sam.algorealm.org/did/v1"
+            "https://www.w3.org/ns/did/v1"
         ],
         "id": did,
         "controller": [did],
+        "authentication": [
+            generateVM(did, pair, "auth", nonce)
+        ],
+        "assertionMethod": [
+            generateVM(did, pair, "assert", nonce)
+        ]
+    };
+
+    return JSON.stringify(json);
+}
+
+// initialize the DID document
+export function createAppDoc(did, pair, controller, nonce=0) {
+    let json = {
+        "@context": [
+            "https://www.w3.org/ns/did/v1"
+        ],
+        "id": did,
+        "controller": [controller],
         "authentication": [
             generateVM(did, pair, "auth", nonce)
         ],

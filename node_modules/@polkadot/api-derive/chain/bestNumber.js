@@ -1,6 +1,8 @@
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { createBlockNumberDerive } from "./util.js";
+
 /**
  * @name bestNumber
  * @returns The latest block number.
@@ -13,5 +15,4 @@ import { createBlockNumberDerive } from "./util.js";
  * });
  * ```
  */
-
 export const bestNumber = createBlockNumberDerive(api => api.rpc.chain.subscribeNewHeads());

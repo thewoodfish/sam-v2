@@ -1,5 +1,6 @@
 // Copyright 2017-2022 @polkadot/api-augment authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import "../base.js";
 import "./consts.js";
 import "./errors.js";

@@ -4,15 +4,10 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.getBlock = getBlock;
-
 var _rxjs = require("rxjs");
-
 var _type = require("../type");
-
 var _util = require("../util");
-
 var _util2 = require("./util");
-
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 

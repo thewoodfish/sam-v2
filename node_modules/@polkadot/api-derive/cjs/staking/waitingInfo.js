@@ -4,18 +4,15 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.waitingInfo = waitingInfo;
-
 var _rxjs = require("rxjs");
-
 var _util = require("../util");
-
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 const DEFAULT_FLAGS = {
   withController: true,
   withPrefs: true
 };
-
 function waitingInfo(instanceId, api) {
   return (0, _util.memo)(instanceId, function () {
     let flags = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : DEFAULT_FLAGS;

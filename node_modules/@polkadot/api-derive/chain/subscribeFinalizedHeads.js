@@ -1,14 +1,16 @@
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { from, of, switchMap } from 'rxjs';
 import { memo } from "../util/index.js";
+
 /**
  * Returns a header range from startHash to to (not including) endHash, i.e. lastBlock.parentHash === endHash
  */
-
 export function _getHeaderRange(instanceId, api) {
   return memo(instanceId, (startHash, endHash, prev = []) => api.rpc.chain.getHeader(startHash).pipe(switchMap(header => header.parentHash.eq(endHash) ? of([header, ...prev]) : api.derive.chain._getHeaderRange(header.parentHash, endHash, [header, ...prev]))));
 }
+
 /**
  * @name subscribeFinalizedHeads
  * @description An observable of the finalized block headers. Unlike the base
@@ -17,7 +19,6 @@ export function _getHeaderRange(instanceId, api) {
  * of the derive tracks missing headers (since last  retrieved) and provides them
  * to the caller
  */
-
 export function subscribeFinalizedHeads(instanceId, api) {
   return memo(instanceId, () => {
     let prevHash = null;

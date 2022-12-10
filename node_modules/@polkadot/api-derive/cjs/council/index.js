@@ -13,11 +13,8 @@ var _exportNames = {
   prime: true
 };
 exports.proposals = exports.proposalHashes = exports.proposalCount = exports.proposal = exports.prime = exports.members = exports.hasProposals = void 0;
-
 var _collective = require("../collective");
-
 var _votes = require("./votes");
-
 Object.keys(_votes).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -29,9 +26,7 @@ Object.keys(_votes).forEach(function (key) {
     }
   });
 });
-
 var _votesOf = require("./votesOf");
-
 Object.keys(_votesOf).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -45,6 +40,7 @@ Object.keys(_votesOf).forEach(function (key) {
 });
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 const members = (0, _collective.members)('council');
 exports.members = members;
 const hasProposals = (0, _collective.hasProposals)('council');

@@ -5,11 +5,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports._getHeaderRange = _getHeaderRange;
 exports.subscribeFinalizedHeads = subscribeFinalizedHeads;
-
 var _rxjs = require("rxjs");
-
 var _util = require("../util");
-
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -22,6 +19,7 @@ function _getHeaderRange(instanceId, api) {
     return api.rpc.chain.getHeader(startHash).pipe((0, _rxjs.switchMap)(header => header.parentHash.eq(endHash) ? (0, _rxjs.of)([header, ...prev]) : api.derive.chain._getHeaderRange(header.parentHash, endHash, [header, ...prev])));
   });
 }
+
 /**
  * @name subscribeFinalizedHeads
  * @description An observable of the finalized block headers. Unlike the base
@@ -30,8 +28,6 @@ function _getHeaderRange(instanceId, api) {
  * of the derive tracks missing headers (since last  retrieved) and provides them
  * to the caller
  */
-
-
 function subscribeFinalizedHeads(instanceId, api) {
   return (0, _util.memo)(instanceId, () => {
     let prevHash = null;
