@@ -151,5 +151,57 @@ function createMetadataFile(fields, cid) {
 
 const uint8ToBase64 = (arr) => Buffer.from(arr).toString('base64');
 
-module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate, splitArray, uint8ToBase64, decryptData, encryptData, extractIDs, parseVCURL, createMetadataFile };
+function setUpAttr(str) {
+    let data = str.split(";");
+    let attr = {};
+
+    for (var i = 0; i < data.length; i++) {
+        let kv = data[i].split("=");
+        attr[kv[0]] = kv[1];
+    }
+
+    return attr;
+}
+
+function compareAndUpdate(attr, str2) {
+    let na = setUpAttr(str2);
+    return {
+        ...attr,
+        ...na
+    };
+}
+
+// make sure the attribute has everything the cType requires
+function attrExists(ctypeObj, attrObj) {
+    let ctProps = Object.keys(ctypeObj);
+    for (var i = 0; i < ctProps.length; i++) 
+        if (!Object.keys(attrObj).includes(ctProps[i])) 
+            return false;
+
+    return true;
+}
+
+// extract the necessary claim properties from attributes
+function extractClaimAttr(props, attrObj) {
+    let claim = {};
+    let ctProps = Object.keys(props);
+
+    for (var i = 0; i < ctProps.length; i++) 
+        if (Object.keys(attrObj).includes(ctProps[i])) 
+            claim[ctProps[i]] = attrObj[ctProps[i]];
+
+    return claim;
+}
+
+// extract URI from ipfs URL
+function extractCID(url) {
+    let frag = url.split("/");
+
+    return frag[frag.length - 1];
+}
+
+module.exports = { Utf8ArrayToStr, extractInfo, getAccessCount, getXMLDate, splitArray, uint8ToBase64, 
+    decryptData, encryptData, extractIDs, parseVCURL, createMetadataFile, setUpAttr, compareAndUpdate,
+    attrExists, extractClaimAttr, extractCID
+};
  

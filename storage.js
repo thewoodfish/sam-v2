@@ -4,6 +4,12 @@ const require = createRequire(import.meta.url);
 import path from 'path';
 import {fileURLToPath} from 'url';
 
+import * as IPFS from "ipfs-core";
+
+const toBuffer = require('it-to-buffer');
+const ipfs = await IPFS.create();
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -16,6 +22,7 @@ import { create, globSource } from 'ipfs-http-client';
 const got = require('got');
 
 const keyring = new Keyring({ type: 'sr25519' });
+
 
 // imports 
 const util = require("./utility.cjs");
@@ -44,6 +51,25 @@ async function uploadToGateway(path, ipfsGateway, authHeader) {
     } else {
         return { cid, error: true };
     }
+}
+
+export async function uploadToIPFS(path) {
+    const { cid } = await ipfs.add(path);
+
+    console.info(cid);
+
+    if (cid) 
+        console.log(cid.toV0().toString());
+    else 
+        throw new Error('IPFS add failed, please try again.');
+
+    return cid;
+}
+
+export async function getFromIPFS(cid) {
+    const bufferedContents = await toBuffer(ipfs.cat(cid)); // returns a Buffer
+    
+    return bufferedContents;
 }
 
 // pin IPFS file on a pining service
