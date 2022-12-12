@@ -15,7 +15,5 @@ Object.defineProperty(exports, "createSubmittable", {
     return _createSubmittable.createSubmittable;
   }
 });
-
 var _createSubmittable = require("./createSubmittable");
-
 var _Result = require("./Result");

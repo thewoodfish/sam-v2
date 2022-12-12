@@ -6,9 +6,11 @@ Object.defineProperty(exports, "__esModule", {
 exports.nobody = nobody;
 // Copyright 2017-2022 @polkadot/keyring authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-// empty publicKey
-const publicKey = new Uint8Array(32); // pre-computed via encodeAddress(publicKey)
 
+// empty publicKey
+const publicKey = new Uint8Array(32);
+
+// pre-computed via encodeAddress(publicKey)
 const address = '5C4hrfjw9DjXZTzV3MwzrrAr9P1MJhSrvWGWqi1eSuyUpnhM';
 const meta = {
   isTesting: true,
@@ -38,7 +40,8 @@ const pair = {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   encryptMessage: (message, recipientPublicKey, _nonce) => new Uint8Array(),
   isLocked: true,
-  lock: () => {// no locking, it is always locked
+  lock: () => {
+    // no locking, it is always locked
   },
   meta,
   publicKey,
@@ -58,7 +61,6 @@ const pair = {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   vrfVerify: (message, vrfResult, context, extra) => false
 };
-
 function nobody() {
   return pair;
 }

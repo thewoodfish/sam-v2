@@ -47,19 +47,12 @@ Object.defineProperty(exports, "packageInfo", {
     return _packageInfo.packageInfo;
   }
 });
-
 require("@polkadot/rpc-augment");
-
 var _keyring = require("@polkadot/keyring");
-
 var _rpcProvider = require("@polkadot/rpc-provider");
-
 var _packageInfo = require("./packageInfo");
-
 var _submittable = require("./submittable");
-
 var _promise = require("./promise");
-
 Object.keys(_promise).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -71,9 +64,7 @@ Object.keys(_promise).forEach(function (key) {
     }
   });
 });
-
 var _rx = require("./rx");
-
 Object.keys(_rx).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;

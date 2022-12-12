@@ -1,5 +1,6 @@
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { combineLatest, map, of } from 'rxjs';
 import { firstMemo, memo } from "../util/index.js";
 import { erasHistoricApplyAccount } from "./util.js";

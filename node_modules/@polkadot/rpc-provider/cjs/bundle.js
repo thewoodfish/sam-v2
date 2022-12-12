@@ -27,11 +27,7 @@ Object.defineProperty(exports, "packageInfo", {
     return _packageInfo.packageInfo;
   }
 });
-
 var _http = require("./http");
-
 var _packageInfo = require("./packageInfo");
-
-var _ws = require("./ws");
-
 var _substrateConnect = require("./substrate-connect");
+var _ws = require("./ws");

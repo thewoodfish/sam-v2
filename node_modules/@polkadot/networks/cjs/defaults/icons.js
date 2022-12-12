@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.knownIcon = void 0;
 // Copyright 2017-2022 @polkadot/networks authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 // these are icon overrides
 const knownIcon = {
   centrifuge: 'polkadot',

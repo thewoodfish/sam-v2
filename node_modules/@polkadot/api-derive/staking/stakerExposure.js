@@ -1,5 +1,6 @@
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { map, switchMap } from 'rxjs';
 import { firstMemo, memo } from "../util/index.js";
 export function _stakerExposures(instanceId, api) {
@@ -13,7 +14,6 @@ export function _stakerExposures(instanceId, api) {
       const isValidator = !!allValidators[stakerId];
       const validators = {};
       const nominating = allNominators[stakerId] || [];
-
       if (isValidator) {
         validators[stakerId] = allValidators[stakerId];
       } else if (nominating) {
@@ -23,7 +23,6 @@ export function _stakerExposures(instanceId, api) {
           validators[validatorId] = allValidators[validatorId];
         });
       }
-
       return {
         era,
         isEmpty: !Object.keys(validators).length,

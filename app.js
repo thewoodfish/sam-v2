@@ -75,7 +75,7 @@ async function createSamaritan(req, res) {
     let sam_doc = net.createDIDDoc(DID, sam);   // first version
 
     let doc_hash = util.encryptData(BOLD_TEXT, sam_doc);
-    let empty_array = [];
+    let empty_array = "[]";
 
     // get an IPFS cid to upload our KILT claims
     await storg.uploadToIPFS(empty_array).then(cid => {
@@ -743,7 +743,7 @@ async function fetchAuthData(req, res) {
     }
 }
 
-// create a KILT credential
+// create a KILT ctype
 async function createKiltCtype(req, res) {
     const auth = isAuth(req.nonce);
     if (auth.is_auth) {
@@ -788,6 +788,113 @@ async function createKiltCtype(req, res) {
     }
 }
 
+// create a KILT credential
+async function createKiltClaim(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        try {
+            // get CType CID from chain
+            let cid = (await api.query.samaritan.ctypeRegistry(req.ctype)).toHuman();
+            if (cid) {
+                // retrieve from IPFS
+                await storg.getFromIPFS(cid).then(ct => {
+                    let ctype = JSON.parse(ct);
+
+                    console.log(ctype);
+
+                    (async () => {
+                        // try {
+                            // get attributes stored onchain for Samaritan
+                            let attr = (await api.query.samaritan.attrRegistry(auth.did)).toHuman();
+                            if (!attr) throw new Error("samaritan has no attribute to claim.")
+
+                            attr = JSON.parse(util.decryptData(BOLD_TEXT, attr));
+
+                            if (util.attrExists(ctype.properties, attr)) {
+                                // get light did
+                                let ldid = (await api.query.samaritan.didRegistry(auth.did)).toHuman();
+                                ldid = JSON.parse(util.decryptData(BOLD_TEXT, ldid[0]));
+
+                                let cred = kilt.createClaim(ctype, attr, ldid.uri);
+
+                                let endpoint = ldid.service[0].serviceEndpoint;
+                                let uri = util.extractCID(endpoint[0]); 
+
+                                (async function () {
+                                    // get repo from IPFS
+                                    await storg.getFromIPFS(uri).then(claims => {
+                                        let creds = JSON.parse(claims);
+
+                                        // append claim
+                                        creds.push(cred);
+
+                                        // save to IPFS
+                                        (async function () { 
+                                            await storg.uploadToIPFS(JSON.stringify(creds)).then(cid => {
+                                                console.log("The CID is  " + cid);
+
+                                                // modify DID document
+                                                ldid.service[0].serviceEndpoint = `http://ipfs.io/ipfs/${cid}`;
+
+                                                (async function () {
+                                                    // save to chain
+                                                    const transfer = api.tx.samaritan.updateLightDoc(auth.did, util.decryptData(BOLD_TEXT, ldid));
+                                                    const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+                                                        if (status.isInBlock) {
+                                                            events.forEach(({ event: { data, method, section }, phase }) => {
+                                                                // check for errors
+                                                                if (section.match("system", "i") && data.toString().indexOf("error") != -1)
+                                                                    throw new Error("could not generate credential.")
+
+                                                                if (section.match("samaritan", "i")) {
+                                                                    return res.send({
+                                                                        data: { 
+                                                                            msg: "KILT credential successfully created."
+                                                                        },
+                                                                        error: false
+                                                                    })
+                                                                } 
+                                                            });
+                                                        }
+                                                    });
+                                                })();
+                                            });
+                                        })();
+                                    })
+                                })();
+                            } else {
+                                throw new Error("samaritan does not have all attributes required by cType")
+                            }
+                        // } catch (e) {
+                        //     return res.send({
+                        //         data: { 
+                        //             msg: e.toString()
+                        //         },
+                        //         error: true
+                        //     })
+                        // }
+                    })();
+                });
+            } else 
+                throw new Error("ctype not found onchain.");
+        } catch (e) {
+            return res.send({
+                data: { 
+                    msg: e.toString()
+                },
+                error: true
+            })
+        }
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+            error: true
+        })
+    }
+}
+
 async function authorKiltCtype(did, req, res) {
     // get the latest did - fullDID
     let list = (await api.query.samaritan.didRegistry(did)).toHuman();
@@ -795,12 +902,12 @@ async function authorKiltCtype(did, req, res) {
 
     let ct = await kilt.mintCType( {title: req.title, attr: req.attr }, did_doc);
     // save to IPFS
-    await storg.uploadToIPFS(ret.prof).then(cid => {
+    await storg.uploadToIPFS(JSON.stringify(ct)).then(cid => {
         console.log("The CID is  " + cid);
 
         (async function() {
             // save onchain
-            const transfer = api.tx.samaritan.saveCtype(auth.did, ctype);
+            const transfer = api.tx.samaritan.saveCtype(ct[`$id`], cid);
             const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
                 if (status.isInBlock) {
                     events.forEach(({ event: { data, method, section }, phase }) => {
@@ -823,9 +930,54 @@ async function authorKiltCtype(did, req, res) {
                     });
                 }
             });
-        })()
+        });
     });
 }
+
+async function attestKiltCredential(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        // first get KILT DID
+        let coll = (await api.query.samaritan.didRegistry(auth.did)).toHuman();
+
+        // check the length of coll
+        if (coll.length == 1) {
+            // author a new full DID for creating making onchain KILT DID transactions
+            let kfdid = await kilt.createFullDid();
+
+            let kf_hash = util.encryptData(BOLD_TEXT, JSON.stringify(kfdid));
+
+            // save onchain 
+            const transfer = api.tx.samaritan.uploadDid(auth.did, kf_hash);
+            const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+                if (status.isInBlock) {
+                    events.forEach(({ event: { data, method, section }, phase }) => {
+                        // check for errors
+                        if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                            return res.send({
+                                data: { msg: "could not create cType" }, error: true
+                            }) 
+                        } 
+
+                        if (section.match("samaritan", "i")) {
+                            authorKiltCtype(auth.did, req, res);
+                        } 
+                    });
+                }
+            });
+        } else 
+            authorKiltCtype(auth.did, req, res);
+
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+            error: true
+        })
+    }
+}
+
 
 // request handles 
 app.use(cors());
@@ -935,6 +1087,17 @@ app.post('/signin', (req, res) => {
 app.get('/create-ctype', (req, res) => {
     createKiltCtype(req.query, res);
 })
+
+// create claim
+app.get('/create-claim', (req, res) => {
+    createKiltClaim(req.query, res);
+})
+
+// attest credential
+app.get('/attest', (req, res) => {
+    attestCredential(req.query, res);
+})
+
 
 // listen on port 3000
 app.listen(port, () => console.info(`Listening on port ${port}`));

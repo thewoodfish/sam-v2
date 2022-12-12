@@ -27,11 +27,7 @@ Object.defineProperty(exports, "knownTestnet", {
     return _testnets.knownTestnet;
   }
 });
-
 var _genesis = require("./genesis");
-
 var _icons = require("./icons");
-
 var _ledger = require("./ledger");
-
 var _testnets = require("./testnets");

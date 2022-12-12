@@ -9,7 +9,5 @@ Object.defineProperty(exports, "packageInfo", {
     return _packageInfo.packageInfo;
   }
 });
-
 require("./augment");
-
 var _packageInfo = require("./packageInfo");

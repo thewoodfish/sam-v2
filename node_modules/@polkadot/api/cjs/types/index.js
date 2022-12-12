@@ -12,9 +12,7 @@ Object.defineProperty(exports, "ApiBase", {
     return _base.ApiBase;
   }
 });
-
 var _types = require("@polkadot/api-base/types");
-
 Object.keys(_types).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -26,9 +24,7 @@ Object.keys(_types).forEach(function (key) {
     }
   });
 });
-
 var _calls = require("@polkadot/api/types/calls");
-
 Object.keys(_calls).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -40,9 +36,7 @@ Object.keys(_calls).forEach(function (key) {
     }
   });
 });
-
 var _consts = require("@polkadot/api/types/consts");
-
 Object.keys(_consts).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -54,9 +48,7 @@ Object.keys(_consts).forEach(function (key) {
     }
   });
 });
-
 var _errors = require("@polkadot/api/types/errors");
-
 Object.keys(_errors).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -68,9 +60,7 @@ Object.keys(_errors).forEach(function (key) {
     }
   });
 });
-
 var _events = require("@polkadot/api/types/events");
-
 Object.keys(_events).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -82,9 +72,7 @@ Object.keys(_events).forEach(function (key) {
     }
   });
 });
-
 var _storage = require("@polkadot/api/types/storage");
-
 Object.keys(_storage).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -96,9 +84,7 @@ Object.keys(_storage).forEach(function (key) {
     }
   });
 });
-
 var _submittable = require("@polkadot/api/types/submittable");
-
 Object.keys(_submittable).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -110,5 +96,4 @@ Object.keys(_submittable).forEach(function (key) {
     }
   });
 });
-
 var _base = require("../base");

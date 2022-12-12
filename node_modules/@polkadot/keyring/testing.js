@@ -1,5 +1,6 @@
 // Copyright 2017-2022 @polkadot/keyring authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { hexToU8a } from '@polkadot/util';
 import { Keyring } from "./keyring.js";
 import { createPair } from "./pair/index.js";
@@ -93,29 +94,25 @@ export const PAIRSETHEREUM = [{
   // nosemgrep
   type: 'ethereum'
 }];
-
 function createMeta(name, seed) {
   if (!name && !seed) {
     throw new Error('Testing pair should have either a name or a seed');
   }
-
   return {
     isTesting: true,
     name: name || seed && seed.replace('//', '_').toLowerCase()
   };
 }
+
 /**
  * @name testKeyring
  * @summary Create an instance of Keyring pre-populated with locked test accounts
  * @description The test accounts (i.e. alice, bob, dave, eve, ferdie)
  * are available on the dev chain and each test account is initialized with DOT funds.
  */
-
-
 export function createTestKeyring(options = {}, isDerived = true) {
   const keyring = new Keyring(options);
   const pairs = options.type === 'ethereum' ? PAIRSETHEREUM : PAIRSSR25519;
-
   for (const {
     name,
     p,
@@ -131,10 +128,9 @@ export function createTestKeyring(options = {}, isDerived = true) {
       publicKey: hexToU8a(p),
       secretKey: hexToU8a(s)
     }, meta));
-
-    pair.lock = () => {// we don't have lock/unlock functionality here
+    pair.lock = () => {
+      // we don't have lock/unlock functionality here
     };
   }
-
   return keyring;
 }

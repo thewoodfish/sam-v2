@@ -1,11 +1,11 @@
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { map, of } from 'rxjs';
 import { memo } from "../util/index.js";
 import { getEraCache, setEraCache } from "./cache.js";
 import { combineEras, erasHistoricApply, singleEra } from "./util.js";
 const CACHE_KEY = 'eraExposure';
-
 function mapStakers(era, stakers) {
   const nominators = {};
   const validators = {};
@@ -29,7 +29,6 @@ function mapStakers(era, stakers) {
     validators
   };
 }
-
 export function _eraExposure(instanceId, api) {
   return memo(instanceId, (era, withActive = false) => {
     const [cacheKey, cached] = getEraCache(CACHE_KEY, era, withActive);

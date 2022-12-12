@@ -1,5 +1,6 @@
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { combineLatest, map, of, switchMap } from 'rxjs';
 import { memo } from "../util/index.js";
 export function _members(instanceId, api) {
@@ -13,10 +14,10 @@ export function _members(instanceId, api) {
     vouching: vouching[index].unwrapOr(undefined)
   })))));
 }
+
 /**
  * @description Get the member info for a society
  */
-
 export function members(instanceId, api) {
   return memo(instanceId, () => api.query.society.members().pipe(switchMap(members => api.derive.society._members(members))));
 }

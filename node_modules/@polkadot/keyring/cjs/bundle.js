@@ -61,13 +61,9 @@ Object.defineProperty(exports, "setSS58Format", {
     return _utilCrypto.setSS58Format;
   }
 });
-
 var _keyring = require("./keyring");
-
 var _utilCrypto = require("@polkadot/util-crypto");
-
 var _defaults = require("./defaults");
-
 Object.keys(_defaults).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -79,11 +75,7 @@ Object.keys(_defaults).forEach(function (key) {
     }
   });
 });
-
 var _pair = require("./pair");
-
 var _packageInfo = require("./packageInfo");
-
 var _testing = require("./testing");
-
 var _testingPairs = require("./testingPairs");

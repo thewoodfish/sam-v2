@@ -5,11 +5,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 var _exportNames = {};
 exports.default = void 0;
-
 require("./detectPackage");
-
 var _bundle = require("./bundle");
-
 Object.keys(_bundle).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;

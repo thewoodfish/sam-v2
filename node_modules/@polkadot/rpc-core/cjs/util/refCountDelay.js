@@ -4,9 +4,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.refCountDelay = refCountDelay;
-
 var _rxjs = require("rxjs");
-
 // Copyright 2017-2022 @polkadot/rpc-core authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -18,17 +16,14 @@ function refCountDelay() {
     let [state, refCount, connection, scheduler] = [0, 0, _rxjs.Subscription.EMPTY, _rxjs.Subscription.EMPTY];
     return new _rxjs.Observable(ob => {
       source.subscribe(ob);
-
       if (refCount++ === 0) {
         if (state === 1) {
           scheduler.unsubscribe();
         } else {
           connection = source.connect();
         }
-
         state = 3;
       }
-
       return () => {
         if (--refCount === 0) {
           if (state === 2) {

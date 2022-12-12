@@ -4,23 +4,18 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.Getters = void 0;
-
 var _packageInfo = require("../packageInfo");
-
 var _find = require("./find");
-
 var _Init = require("./Init");
-
 // Copyright 2017-2022 @polkadot/api authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 function assertResult(value) {
   if (value === undefined) {
     throw new Error("Api interfaces needs to be initialized before using, wait for 'isReady'");
   }
-
   return value;
 }
-
 class Getters extends _Init.Init {
   /**
    * @description Runtime call interfaces (currently untyped, only decorated via API options)
@@ -28,6 +23,7 @@ class Getters extends _Init.Init {
   get call() {
     return assertResult(this._call);
   }
+
   /**
    * @description Contains the parameter types (constants) of all modules.
    *
@@ -40,11 +36,10 @@ class Getters extends _Init.Init {
    * console.log(api.consts.democracy.enactmentPeriod.toString())
    * ```
    */
-
-
   get consts() {
     return assertResult(this._consts);
   }
+
   /**
    * @description Derived results that are injected into the API, allowing for combinations of various query results.
    *
@@ -57,59 +52,52 @@ class Getters extends _Init.Init {
    * });
    * ```
    */
-
-
   get derive() {
     return assertResult(this._derive);
   }
+
   /**
    * @description Errors from metadata
    */
-
-
   get errors() {
     return assertResult(this._errors);
   }
+
   /**
    * @description Events from metadata
    */
-
-
   get events() {
     return assertResult(this._events);
   }
+
   /**
    * @description  Returns the version of extrinsics in-use on this chain
    */
-
-
   get extrinsicVersion() {
     return this._extrinsicType;
   }
+
   /**
    * @description Contains the genesis Hash of the attached chain. Apart from being useful to determine the actual chain, it can also be used to sign immortal transactions.
    */
-
-
   get genesisHash() {
     return assertResult(this._genesisHash);
   }
+
   /**
    * @description true is the underlying provider is connected
    */
-
-
   get isConnected() {
     return this._isConnected.getValue();
   }
+
   /**
    * @description The library information name & version (from package.json)
    */
-
-
   get libraryInfo() {
     return `${_packageInfo.packageInfo.name} v${_packageInfo.packageInfo.version}`;
   }
+
   /**
    * @description Contains all the chain state modules and their subsequent methods in the API. These are attached dynamically from the runtime metadata.
    *
@@ -124,11 +112,10 @@ class Getters extends _Init.Init {
    * });
    * ```
    */
-
-
   get query() {
     return assertResult(this._query);
   }
+
   /**
    * @description Allows for the querying of multiple storage entries and the combination thereof into a single result. This is a very optimal way to make multiple queries since it only makes a single connection to the node and retrieves the data over one subscription.
    *
@@ -151,11 +138,10 @@ class Getters extends _Init.Init {
    * );
    * ```
    */
-
-
   get queryMulti() {
     return assertResult(this._queryMulti);
   }
+
   /**
    * @description Contains all the raw rpc sections and their subsequent methods in the API as defined by the jsonrpc interface definitions. Unlike the dynamic `api.query` and `api.tx` sections, these methods are fixed (although extensible with node upgrades) and not determined by the runtime.
    *
@@ -170,59 +156,52 @@ class Getters extends _Init.Init {
    * });
    * ```
    */
-
-
   get rpc() {
     return assertResult(this._rpc);
   }
+
   /**
    * @description Contains the chain information for the current node.
    */
-
-
   get runtimeChain() {
     return assertResult(this._runtimeChain);
   }
+
   /**
    * @description Yields the current attached runtime metadata. Generally this is only used to construct extrinsics & storage, but is useful for current runtime inspection.
    */
-
-
   get runtimeMetadata() {
     return assertResult(this._runtimeMetadata);
   }
+
   /**
    * @description Contains the version information for the current runtime.
    */
-
-
   get runtimeVersion() {
     return assertResult(this._runtimeVersion);
   }
+
   /**
    * @description The underlying Rx API interface
    */
-
-
   get rx() {
     return assertResult(this._rx);
   }
+
   /**
    * @description Returns the underlying provider stats
    */
-
-
   get stats() {
     return this._rpcCore.provider.stats;
   }
+
   /**
    * @description The type of this API instance, either 'rxjs' or 'promise'
    */
-
-
   get type() {
     return this._type;
   }
+
   /**
    * @description Contains all the extrinsic modules and their subsequent methods in the API. It allows for the construction of transactions and the submission thereof. These are attached dynamically from the runtime metadata.
    *
@@ -237,28 +216,22 @@ class Getters extends _Init.Init {
    *   });
    * ```
    */
-
-
   get tx() {
     return assertResult(this._extrinsics);
   }
+
   /**
    * @description Finds the definition for a specific [[CallFunction]] based on the index supplied
    */
-
-
   findCall(callIndex) {
     return (0, _find.findCall)(this.registry, callIndex);
   }
+
   /**
    * @description Finds the definition for a specific [[RegistryError]] based on the index supplied
    */
-
-
   findError(errorIndex) {
     return (0, _find.findError)(this.registry, errorIndex);
   }
-
 }
-
 exports.Getters = Getters;

@@ -5,18 +5,16 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.TEST_WS_URL = void 0;
 exports.mockWs = mockWs;
-
 var _mockSocket = require("mock-socket");
-
 var _util = require("@polkadot/util");
-
 // Copyright 2017-2022 @polkadot/rpc-provider authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 global.WebSocket = _mockSocket.WebSocket;
-const TEST_WS_URL = 'ws://localhost:9955'; // should be JSONRPC def return
+const TEST_WS_URL = 'ws://localhost:9955';
 
+// should be JSONRPC def return
 exports.TEST_WS_URL = TEST_WS_URL;
-
 function createError(_ref) {
   let {
     error: {
@@ -33,9 +31,9 @@ function createError(_ref) {
     id,
     jsonrpc: '2.0'
   };
-} // should be JSONRPC def return
+}
 
-
+// should be JSONRPC def return
 function createReply(_ref2) {
   let {
     id,
@@ -48,9 +46,9 @@ function createReply(_ref2) {
     jsonrpc: '2.0',
     result
   };
-} // scope definition returned
+}
 
-
+// scope definition returned
 function mockWs(requests) {
   let wsUrl = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : TEST_WS_URL;
   const server = new _mockSocket.Server(wsUrl);
@@ -58,7 +56,8 @@ function mockWs(requests) {
   const scope = {
     body: {},
     done: () => {
-      server.stop(() => {// ignore
+      server.stop(() => {
+        // ignore
       });
     },
     requests: 0,

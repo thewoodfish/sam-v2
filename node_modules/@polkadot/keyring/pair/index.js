@@ -1,5 +1,6 @@
 // Copyright 2017-2022 @polkadot/keyring authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { objectSpread, u8aConcat, u8aEmpty, u8aEq, u8aToHex, u8aToU8a } from '@polkadot/util';
 import { blake2AsU8a, convertPublicKeyToCurve25519, convertSecretKeyToCurve25519, ed25519PairFromSeed as ed25519FromSeed, ed25519Sign, ethereumEncode, keccakAsU8a, keyExtractPath, keyFromPath, naclOpen, naclSeal, secp256k1Compress, secp256k1Expand, secp256k1PairFromSeed as secp256k1FromSeed, secp256k1Sign, signatureVerify, sr25519PairFromSeed as sr25519FromSeed, sr25519Sign, sr25519VrfSign, sr25519VrfVerify } from '@polkadot/util-crypto';
 import { decodePair } from "./decode.js";
@@ -30,14 +31,13 @@ const TYPE_ADDRESS = {
   ethereum: p => p.length === 20 ? p : keccakAsU8a(secp256k1Expand(p)),
   sr25519: p => p
 };
-
 function isLocked(secretKey) {
   return !secretKey || u8aEmpty(secretKey);
 }
-
 function vrfHash(proof, context, extra) {
   return blake2AsU8a(u8aConcat(context || '', extra || '', proof));
 }
+
 /**
  * @name createPair
  * @summary Creates a keyring pair object
@@ -69,8 +69,6 @@ function vrfHash(proof, context, extra) {
  * an `encoded` property that is assigned with the encoded public key in hex format, and an `encoding`
  * property that indicates whether the public key value of the `encoded` property is encoded or not.
  */
-
-
 export function createPair({
   toSS58,
   type
@@ -80,7 +78,6 @@ export function createPair({
 }, meta = {}, encoded = null, encTypes) {
   const decodePkcs8 = (passphrase, userEncoded) => {
     const decoded = decodePair(passphrase, userEncoded || encoded, encTypes);
-
     if (decoded.secretKey.length === 64) {
       publicKey = decoded.publicKey;
       secretKey = decoded.secretKey;
@@ -90,50 +87,40 @@ export function createPair({
       secretKey = pair.secretKey;
     }
   };
-
   const recode = passphrase => {
     isLocked(secretKey) && encoded && decodePkcs8(passphrase, encoded);
     encoded = encodePair({
       publicKey,
       secretKey
     }, passphrase); // re-encode, latest version
-
     encTypes = undefined; // swap to defaults, latest version follows
 
     return encoded;
   };
-
   const encodeAddress = () => {
     const raw = TYPE_ADDRESS[type](publicKey);
     return type === 'ethereum' ? ethereumEncode(raw) : toSS58(raw);
   };
-
   return {
     get address() {
       return encodeAddress();
     },
-
     get addressRaw() {
       const raw = TYPE_ADDRESS[type](publicKey);
       return type === 'ethereum' ? raw.slice(-20) : raw;
     },
-
     get isLocked() {
       return isLocked(secretKey);
     },
-
     get meta() {
       return meta;
     },
-
     get publicKey() {
       return publicKey;
     },
-
     get type() {
       return type;
     },
-
     // eslint-disable-next-line sort-keys
     decodePkcs8,
     decryptMessage: (encryptedMessageWithNonce, senderPublicKey) => {
@@ -142,7 +129,6 @@ export function createPair({
       } else if (['ecdsa', 'ethereum'].includes(type)) {
         throw new Error('Secp256k1 not supported yet');
       }
-
       const messageU8a = u8aToU8a(encryptedMessageWithNonce);
       return naclOpen(messageU8a.slice(24, messageU8a.length), messageU8a.slice(0, 24), convertPublicKeyToCurve25519(u8aToU8a(senderPublicKey)), convertSecretKeyToCurve25519(secretKey));
     },
@@ -152,7 +138,6 @@ export function createPair({
       } else if (isLocked(secretKey)) {
         throw new Error('Cannot derive on a locked keypair');
       }
-
       const {
         path
       } = keyExtractPath(suri);
@@ -174,7 +159,6 @@ export function createPair({
       } else if (['ecdsa', 'ethereum'].includes(type)) {
         throw new Error('Secp256k1 not supported yet');
       }
-
       const {
         nonce,
         sealed
@@ -191,7 +175,6 @@ export function createPair({
       if (isLocked(secretKey)) {
         throw new Error('Cannot sign with a locked key pair');
       }
-
       return u8aConcat(options.withType ? TYPE_PREFIX[type] : SIG_TYPE_NONE, TYPE_SIGNATURE[type](u8aToU8a(message), {
         publicKey,
         secretKey
@@ -217,13 +200,11 @@ export function createPair({
       if (isLocked(secretKey)) {
         throw new Error('Cannot sign with a locked key pair');
       }
-
       if (type === 'sr25519') {
         return sr25519VrfSign(message, {
           secretKey
         }, context, extra);
       }
-
       const proof = TYPE_SIGNATURE[type](u8aToU8a(message), {
         publicKey,
         secretKey
@@ -234,7 +215,6 @@ export function createPair({
       if (type === 'sr25519') {
         return sr25519VrfVerify(message, vrfResult, publicKey, context, extra);
       }
-
       const result = signatureVerify(message, u8aConcat(TYPE_PREFIX[type], vrfResult.subarray(32)), TYPE_ADDRESS[type](u8aToU8a(signerPublic)));
       return result.isValid && u8aEq(vrfResult.subarray(0, 32), vrfHash(vrfResult.subarray(32), context, extra));
     }

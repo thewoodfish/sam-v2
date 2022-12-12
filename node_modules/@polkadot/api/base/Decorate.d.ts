@@ -112,6 +112,7 @@ export declare abstract class Decorate<ApiType extends ApiTypes> extends Events 
     private _decorateFunctionMeta;
     protected _filterRpc(methods: string[], additional: Record<string, Record<string, DefinitionRpc | DefinitionRpcSub>>): void;
     protected _filterRpcMethods(exposed: string[]): void;
+    private _rpcSubmitter;
     protected _decorateRpc<ApiType extends ApiTypes>(rpc: RpcCore & RpcInterface, decorateMethod: DecorateMethod<ApiType>, input?: Partial<DecoratedRpc<ApiType, RpcInterface>>): DecoratedRpc<ApiType, RpcInterface>;
     protected _addRuntimeDef(result: DefinitionsCall, additional?: DefinitionsCall): void;
     protected _getRuntimeDefs(registry: Registry, specName: Text, chain?: Text | string): [string, DefinitionsCallEntry[]][];

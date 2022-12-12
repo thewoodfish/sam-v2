@@ -1,5 +1,6 @@
 // Copyright 2017-2022 @polkadot/rpc-provider authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import nock from 'nock';
 export const TEST_HTTP_URL = 'http://localhost:9944';
 export function mockHttp(requests) {

@@ -26,9 +26,7 @@ Object.defineProperty(exports, "l", {
     return _logging.l;
   }
 });
-
 var _decorate = require("./decorate");
-
 Object.keys(_decorate).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -40,9 +38,6 @@ Object.keys(_decorate).forEach(function (key) {
     }
   });
 });
-
 var _filterEvents = require("./filterEvents");
-
 var _isKeyringPair = require("./isKeyringPair");
-
 var _logging = require("./logging");

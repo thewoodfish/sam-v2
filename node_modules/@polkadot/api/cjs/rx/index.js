@@ -15,7 +15,5 @@ Object.defineProperty(exports, "toRxMethod", {
     return _decorateMethod.toRxMethod;
   }
 });
-
 var _Api = require("./Api");
-
 var _decorateMethod = require("./decorateMethod");

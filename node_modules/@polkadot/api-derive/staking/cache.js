@@ -1,5 +1,6 @@
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { deriveCache } from "../util/index.js";
 export function getEraCache(CACHE_KEY, era, withActive) {
   const cacheKey = `${CACHE_KEY}-${era.toString()}`;

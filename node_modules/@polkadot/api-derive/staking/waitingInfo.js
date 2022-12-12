@@ -1,5 +1,6 @@
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { combineLatest, map, switchMap } from 'rxjs';
 import { memo } from "../util/index.js";
 const DEFAULT_FLAGS = {

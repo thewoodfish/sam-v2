@@ -5,15 +5,12 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.PAIRSSR25519 = exports.PAIRSETHEREUM = void 0;
 exports.createTestKeyring = createTestKeyring;
-
 var _util = require("@polkadot/util");
-
 var _keyring = require("./keyring");
-
 var _pair = require("./pair");
-
 // Copyright 2017-2022 @polkadot/keyring authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 // NOTE This is not great since we have the secretKey here explicitly, but a testing
 // keyring is for testing - what happens is that in most cases the keyring is initialises
 // before anything else. Since the sr25519 crypto is async, this creates problems with
@@ -106,31 +103,27 @@ const PAIRSETHEREUM = [{
   type: 'ethereum'
 }];
 exports.PAIRSETHEREUM = PAIRSETHEREUM;
-
 function createMeta(name, seed) {
   if (!name && !seed) {
     throw new Error('Testing pair should have either a name or a seed');
   }
-
   return {
     isTesting: true,
     name: name || seed && seed.replace('//', '_').toLowerCase()
   };
 }
+
 /**
  * @name testKeyring
  * @summary Create an instance of Keyring pre-populated with locked test accounts
  * @description The test accounts (i.e. alice, bob, dave, eve, ferdie)
  * are available on the dev chain and each test account is initialized with DOT funds.
  */
-
-
 function createTestKeyring() {
   let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   let isDerived = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
   const keyring = new _keyring.Keyring(options);
   const pairs = options.type === 'ethereum' ? PAIRSETHEREUM : PAIRSSR25519;
-
   for (const {
     name,
     p,
@@ -146,10 +139,9 @@ function createTestKeyring() {
       publicKey: (0, _util.hexToU8a)(p),
       secretKey: (0, _util.hexToU8a)(s)
     }, meta));
-
-    pair.lock = () => {// we don't have lock/unlock functionality here
+    pair.lock = () => {
+      // we don't have lock/unlock functionality here
     };
   }
-
   return keyring;
 }

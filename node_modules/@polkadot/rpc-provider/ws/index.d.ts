@@ -36,6 +36,10 @@ export declare class WsProvider implements ProviderInterface {
      */
     get hasSubscriptions(): boolean;
     /**
+     * @summary `true` when this provider supports clone()
+     */
+    get isClonable(): boolean;
+    /**
      * @summary Whether the node is connected or not.
      * @return {boolean} true if connected
      */

@@ -1,6 +1,8 @@
 // Copyright 2017-2022 @polkadot/rpc-provider authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 // from https://stackoverflow.com/questions/19304157/getting-the-reason-why-websockets-closed-with-close-code-1006
+
 const known = {
   1000: 'Normal Closure',
   1001: 'Going Away',
@@ -19,7 +21,6 @@ const known = {
   1014: 'Bad Gateway',
   1015: 'TLS Handshake'
 };
-
 function getUnmapped(code) {
   if (code <= 1999) {
     return '(For WebSocket standard)';
@@ -31,11 +32,9 @@ function getUnmapped(code) {
     return '(For applications)';
   }
 }
-
 export function getWSErrorString(code) {
   if (code >= 0 && code <= 999) {
     return '(Unused)';
   }
-
   return known[code] || getUnmapped(code) || '(Unknown)';
 }

@@ -12,9 +12,7 @@ Object.defineProperty(exports, "packageInfo", {
     return _packageInfo.packageInfo;
   }
 });
-
 var _interfaces = require("./interfaces");
-
 Object.keys(_interfaces).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -26,5 +24,4 @@ Object.keys(_interfaces).forEach(function (key) {
     }
   });
 });
-
 var _packageInfo = require("./packageInfo");

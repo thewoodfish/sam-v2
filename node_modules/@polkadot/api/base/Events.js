@@ -1,12 +1,13 @@
 // Copyright 2017-2022 @polkadot/api authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import EventEmitter from 'eventemitter3';
 export class Events {
   #eventemitter = new EventEmitter();
-
   emit(type, ...args) {
     return this.#eventemitter.emit(type, ...args);
   }
+
   /**
    * @description Attach an eventemitter handler to listen to a specific event
    *
@@ -26,12 +27,11 @@ export class Events {
    * });
    * ```
    */
-
-
   on(type, handler) {
     this.#eventemitter.on(type, handler);
     return this;
   }
+
   /**
    * @description Remove the given eventemitter handler
    *
@@ -53,12 +53,11 @@ export class Events {
    * api.off('connected', handler);
    * ```
    */
-
-
   off(type, handler) {
     this.#eventemitter.removeListener(type, handler);
     return this;
   }
+
   /**
    * @description Attach an one-time eventemitter handler to listen to a specific event
    *
@@ -78,11 +77,8 @@ export class Events {
    * });
    * ```
    */
-
-
   once(type, handler) {
     this.#eventemitter.once(type, handler);
     return this;
   }
-
 }

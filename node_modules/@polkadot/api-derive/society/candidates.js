@@ -1,8 +1,8 @@
 // Copyright 2017-2022 @polkadot/api-derive authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { combineLatest, map, of, switchMap } from 'rxjs';
 import { memo } from "../util/index.js";
-
 /**
  * @description Get the candidate info for a society
  */

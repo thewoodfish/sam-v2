@@ -1,9 +1,11 @@
 // Copyright 2017-2022 @polkadot/api authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { objectSpread } from '@polkadot/util';
 import { ApiBase } from "../base/index.js";
 import { Combinator } from "./Combinator.js";
 import { promiseTracker, toPromiseMethod } from "./decorateMethod.js";
+
 /**
  * # @polkadot/api/promise
  *
@@ -88,10 +90,10 @@ import { promiseTracker, toPromiseMethod } from "./decorateMethod.js";
  * });
  * ```
  */
-
 export class ApiPromise extends ApiBase {
   #isReadyPromise;
   #isReadyOrErrorPromise;
+
   /**
    * @description Creates an instance of the ApiPromise class
    * @param options Options to create an instance. This can be either [[ApiOptions]] or
@@ -109,7 +111,6 @@ export class ApiPromise extends ApiBase {
    * });
    * ```
    */
-
   constructor(options) {
     super(options, 'promise', toPromiseMethod);
     this.#isReadyPromise = new Promise(resolve => {
@@ -121,6 +122,7 @@ export class ApiPromise extends ApiBase {
       super.once('error', error => tracker.reject(error));
     });
   }
+
   /**
    * @description Creates an ApiPromise instance using the supplied provider. Returns an Promise containing the actual Api instance.
    * @param options options that is passed to the class contructor. Can be either [[ApiOptions]] or a
@@ -138,47 +140,43 @@ export class ApiPromise extends ApiBase {
    * });
    * ```
    */
-
-
   static create(options) {
     const instance = new ApiPromise(options);
-
     if (options && options.throwOnConnect) {
       return instance.isReadyOrError;
-    } // Swallow any rejections on isReadyOrError
+    }
+
+    // Swallow any rejections on isReadyOrError
     // (in Node 15.x this creates issues, when not being looked at)
-
-
-    instance.isReadyOrError.catch(() => {// ignore
+    instance.isReadyOrError.catch(() => {
+      // ignore
     });
     return instance.isReady;
   }
+
   /**
    * @description Promise that resolves the first time we are connected and loaded
    */
-
-
   get isReady() {
     return this.#isReadyPromise;
   }
+
   /**
    * @description Promise that resolves if we can connect, or reject if there is an error
    */
-
-
   get isReadyOrError() {
     return this.#isReadyOrErrorPromise;
   }
+
   /**
    * @description Returns a clone of this ApiPromise instance (new underlying provider connection)
    */
-
-
   clone() {
     return new ApiPromise(objectSpread({}, this._options, {
       source: this
     }));
   }
+
   /**
    * @description Creates a combinator that can be used to combine the latest results from multiple subscriptions
    * @param fns An array of function to combine, each in the form of `(cb: (value: void)) => void`
@@ -199,13 +197,10 @@ export class ApiPromise extends ApiBase {
    * ```
    */
   // eslint-disable-next-line @typescript-eslint/require-await
-
-
   async combineLatest(fns, callback) {
     const combinator = new Combinator(fns, callback);
     return () => {
       combinator.unsubscribe();
     };
   }
-
 }

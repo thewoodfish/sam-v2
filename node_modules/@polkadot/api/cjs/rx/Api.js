@@ -4,15 +4,10 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.ApiRx = void 0;
-
 var _rxjs = require("rxjs");
-
 var _util = require("@polkadot/util");
-
 var _base = require("../base");
-
 var _decorateMethod = require("./decorateMethod");
-
 // Copyright 2017-2022 @polkadot/api authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -117,6 +112,7 @@ var _decorateMethod = require("./decorateMethod");
  */
 class ApiRx extends _base.ApiBase {
   #isReadyRx;
+
   /**
    * @description Create an instance of the ApiRx class
    * @param options Options to create an instance. Can be either [[ApiOptions]] or [[WsProvider]]
@@ -137,14 +133,15 @@ class ApiRx extends _base.ApiBase {
    *   });
    * ```
    */
-
   constructor(options) {
     super(options, 'rxjs', _decorateMethod.toRxMethod);
-    this.#isReadyRx = (0, _rxjs.from)( // You can create an observable from an event, however my mind groks this form better
+    this.#isReadyRx = (0, _rxjs.from)(
+    // You can create an observable from an event, however my mind groks this form better
     new Promise(resolve => {
       super.on('ready', () => resolve(this));
     }));
   }
+
   /**
    * @description Creates an ApiRx instance using the supplied provider. Returns an Observable containing the actual Api instance.
    * @param options options that is passed to the class constructor. Can be either [[ApiOptions]] or [[WsProvider]]
@@ -165,30 +162,24 @@ class ApiRx extends _base.ApiBase {
    *   });
    * ```
    */
-
-
   static create(options) {
     return new ApiRx(options).isReady;
   }
+
   /**
    * @description Observable that returns the first time we are connected and loaded
    */
-
-
   get isReady() {
     return this.#isReadyRx;
   }
+
   /**
    * @description Returns a clone of this ApiRx instance (new underlying provider connection)
    */
-
-
   clone() {
     return new ApiRx((0, _util.objectSpread)({}, this._options, {
       source: this
     }));
   }
-
 }
-
 exports.ApiRx = ApiRx;

@@ -1,6 +1,7 @@
 // Copyright 2017-2022 @polkadot/rpc-provider authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { stringify } from '@polkadot/util';
 /*
  * Creates a new health checker.
  *
@@ -42,14 +43,12 @@ export function healthChecker() {
       if (checker === null) {
         return jsonRpcResponse;
       }
-
       return checker.responsePassThrough(jsonRpcResponse);
     },
     sendJsonRpc: request => {
       if (!sendJsonRpc) {
         throw new Error('setSendJsonRpc must be called before sending requests');
       }
-
       if (checker === null) {
         sendJsonRpc(request);
       } else {
@@ -65,7 +64,6 @@ export function healthChecker() {
       } else if (!sendJsonRpc) {
         throw new Error('setSendJsonRpc must be called before starting the health checks');
       }
-
       checker = new InnerChecker(healthCallback, sendJsonRpc);
       checker.update(true);
     },
@@ -74,13 +72,11 @@ export function healthChecker() {
         return;
       } // Already stopped.
 
-
       checker.destroy();
       checker = null;
     }
   };
 }
-
 class InnerChecker {
   #healthCallback;
   #currentHealthCheckId = null;
@@ -90,75 +86,68 @@ class InnerChecker {
   #requestToSmoldot;
   #isSyncing = false;
   #nextRequestId = 0;
-
   constructor(healthCallback, requestToSmoldot) {
     this.#healthCallback = healthCallback;
     this.#requestToSmoldot = requestToSmoldot;
   }
-
   sendJsonRpc = request => {
     // Replace the `id` in the request to prefix the request ID with `extern:`.
     let parsedRequest;
-
     try {
       parsedRequest = JSON.parse(request);
     } catch (err) {
       return;
     }
-
     if (parsedRequest.id) {
-      const newId = 'extern:' + JSON.stringify(parsedRequest.id);
+      const newId = 'extern:' + stringify(parsedRequest.id);
       parsedRequest.id = newId;
     }
-
-    this.#requestToSmoldot(JSON.stringify(parsedRequest));
+    this.#requestToSmoldot(stringify(parsedRequest));
   };
   responsePassThrough = jsonRpcResponse => {
     let parsedResponse;
-
     try {
       parsedResponse = JSON.parse(jsonRpcResponse);
     } catch (err) {
       return jsonRpcResponse;
-    } // Check whether response is a response to `system_health`.
+    }
 
-
+    // Check whether response is a response to `system_health`.
     if (parsedResponse.id && this.#currentHealthCheckId === parsedResponse.id) {
-      this.#currentHealthCheckId = null; // Check whether query was successful. It is possible for queries to fail for
-      // various reasons, such as the client being overloaded.
+      this.#currentHealthCheckId = null;
 
+      // Check whether query was successful. It is possible for queries to fail for
+      // various reasons, such as the client being overloaded.
       if (!parsedResponse.result) {
         this.update(false);
         return null;
       }
-
       this.#healthCallback(parsedResponse.result);
       this.#isSyncing = parsedResponse.result.isSyncing;
       this.update(false);
       return null;
-    } // Check whether response is a response to the subscription or unsubscription.
+    }
 
-
+    // Check whether response is a response to the subscription or unsubscription.
     if (parsedResponse.id && this.#currentSubunsubRequestId === parsedResponse.id) {
-      this.#currentSubunsubRequestId = null; // Check whether query was successful. It is possible for queries to fail for
-      // various reasons, such as the client being overloaded.
+      this.#currentSubunsubRequestId = null;
 
+      // Check whether query was successful. It is possible for queries to fail for
+      // various reasons, such as the client being overloaded.
       if (!parsedResponse.result) {
         this.update(false);
         return null;
       }
-
       if (this.#currentSubscriptionId) {
         this.#currentSubscriptionId = null;
       } else {
         this.#currentSubscriptionId = parsedResponse.result;
       }
-
       this.update(false);
       return null;
-    } // Check whether response is a notification to a subscription.
+    }
 
-
+    // Check whether response is a notification to a subscription.
     if (parsedResponse.params && this.#currentSubscriptionId && parsedResponse.params.subscription === this.#currentSubscriptionId) {
       // Note that after a successful subscription, a notification containing
       // the current best block is always returned. Considering that a
@@ -171,21 +160,20 @@ class InnerChecker {
       // request.
       this.update(true);
       return null;
-    } // Response doesn't concern us.
+    }
 
-
+    // Response doesn't concern us.
     if (parsedResponse.id) {
-      const id = parsedResponse.id; // Need to remove the `extern:` prefix.
+      const id = parsedResponse.id;
 
+      // Need to remove the `extern:` prefix.
       if (!id.startsWith('extern:')) {
         throw new Error('State inconsistency in health checker');
       }
-
       const newId = JSON.parse(id.slice('extern:'.length));
       parsedResponse.id = newId;
     }
-
-    return JSON.stringify(parsedResponse);
+    return stringify(parsedResponse);
   };
   update = startNow => {
     // If `startNow`, clear `#currentHealthTimeout` so that it is set below.
@@ -193,38 +181,35 @@ class InnerChecker {
       clearTimeout(this.#currentHealthTimeout);
       this.#currentHealthTimeout = null;
     }
-
     if (!this.#currentHealthTimeout) {
       const startHealthRequest = () => {
-        this.#currentHealthTimeout = null; // No matter what, don't start a health request if there is already one in progress.
-        // This is sane to do because receiving a response to a health request calls `update()`.
+        this.#currentHealthTimeout = null;
 
+        // No matter what, don't start a health request if there is already one in progress.
+        // This is sane to do because receiving a response to a health request calls `update()`.
         if (this.#currentHealthCheckId) {
           return;
-        } // Actual request starting.
+        }
 
-
-        this.#currentHealthCheckId = 'health-checker:'.concat(this.#nextRequestId.toString());
+        // Actual request starting.
+        this.#currentHealthCheckId = `health-checker:${this.#nextRequestId}`;
         this.#nextRequestId += 1;
-        this.#requestToSmoldot(JSON.stringify({
+        this.#requestToSmoldot(stringify({
           id: this.#currentHealthCheckId,
           jsonrpc: '2.0',
           method: 'system_health',
           params: []
         }));
       };
-
       if (startNow) {
         startHealthRequest();
       } else {
         this.#currentHealthTimeout = setTimeout(startHealthRequest, 1000);
       }
     }
-
     if (this.#isSyncing && !this.#currentSubscriptionId && !this.#currentSubunsubRequestId) {
       this.startSubscription();
     }
-
     if (!this.#isSyncing && this.#currentSubscriptionId && !this.#currentSubunsubRequestId) {
       this.endSubscription();
     }
@@ -233,10 +218,9 @@ class InnerChecker {
     if (this.#currentSubunsubRequestId || this.#currentSubscriptionId) {
       throw new Error('Internal error in health checker');
     }
-
-    this.#currentSubunsubRequestId = 'health-checker:'.concat(this.#nextRequestId.toString());
+    this.#currentSubunsubRequestId = `health-checker:${this.#nextRequestId}`;
     this.#nextRequestId += 1;
-    this.#requestToSmoldot(JSON.stringify({
+    this.#requestToSmoldot(stringify({
       id: this.#currentSubunsubRequestId,
       jsonrpc: '2.0',
       method: 'chain_subscribeNewHeads',
@@ -247,10 +231,9 @@ class InnerChecker {
     if (this.#currentSubunsubRequestId || !this.#currentSubscriptionId) {
       throw new Error('Internal error in health checker');
     }
-
-    this.#currentSubunsubRequestId = 'health-checker:'.concat(this.#nextRequestId.toString());
+    this.#currentSubunsubRequestId = `health-checker:${this.#nextRequestId}`;
     this.#nextRequestId += 1;
-    this.#requestToSmoldot(JSON.stringify({
+    this.#requestToSmoldot(stringify({
       id: this.#currentSubunsubRequestId,
       jsonrpc: '2.0',
       method: 'chain_unsubscribeNewHeads',
@@ -264,17 +247,13 @@ class InnerChecker {
     }
   };
 }
-
 export class HealthCheckError extends Error {
   #cause;
-
   getCause() {
     return this.#cause;
   }
-
   constructor(response, message = 'Got error response asking for system health') {
     super(message);
     this.#cause = response;
   }
-
 }

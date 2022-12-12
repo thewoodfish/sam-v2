@@ -4,13 +4,11 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
-
 var _function = require("@polkadot/util/is/function");
-
 // Copyright 2017-2022 @polkadot/rpc-provider authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-const UNKNOWN = -99999;
 
+const UNKNOWN = -99999;
 function extend(that, name, value) {
   Object.defineProperty(that, name, {
     configurable: true,
@@ -18,6 +16,7 @@ function extend(that, name, value) {
     value
   });
 }
+
 /**
  * @name RpcError
  * @summary Extension to the basic JS Error.
@@ -32,8 +31,6 @@ function extend(that, name, value) {
  * throw new RpcError('some message', RpcError.CODES.METHOD_NOT_FOUND); // => error.code = -32601
  * ```
  */
-
-
 class RpcError extends Error {
   constructor() {
     let message = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
@@ -44,7 +41,6 @@ class RpcError extends Error {
     extend(this, 'name', this.constructor.name);
     extend(this, 'data', data);
     extend(this, 'code', code);
-
     if ((0, _function.isFunction)(Error.captureStackTrace)) {
       Error.captureStackTrace(this, this.constructor);
     } else {
@@ -54,7 +50,6 @@ class RpcError extends Error {
       stack && extend(this, 'stack', stack);
     }
   }
-
   static CODES = {
     ASSERT: -90009,
     INVALID_JSONRPC: -99998,
@@ -63,5 +58,4 @@ class RpcError extends Error {
     UNKNOWN
   };
 }
-
 exports.default = RpcError;

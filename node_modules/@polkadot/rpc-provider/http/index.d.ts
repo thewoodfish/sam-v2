@@ -46,6 +46,10 @@ export declare class HttpProvider implements ProviderInterface {
      */
     get stats(): ProviderStats;
     /**
+     * @summary `true` when this provider supports clone()
+     */
+    get isClonable(): boolean;
+    /**
      * @summary Whether the node is connected or not.
      * @return {boolean} true if connected
      */

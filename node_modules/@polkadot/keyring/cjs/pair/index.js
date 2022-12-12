@@ -4,19 +4,14 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.createPair = createPair;
-
 var _util = require("@polkadot/util");
-
 var _utilCrypto = require("@polkadot/util-crypto");
-
 var _decode = require("./decode");
-
 var _encode = require("./encode");
-
 var _toJson = require("./toJson");
-
 // Copyright 2017-2022 @polkadot/keyring authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 const SIG_TYPE_NONE = new Uint8Array();
 const TYPE_FROM_SEED = {
   ecdsa: _utilCrypto.secp256k1PairFromSeed,
@@ -42,14 +37,13 @@ const TYPE_ADDRESS = {
   ethereum: p => p.length === 20 ? p : (0, _utilCrypto.keccakAsU8a)((0, _utilCrypto.secp256k1Expand)(p)),
   sr25519: p => p
 };
-
 function isLocked(secretKey) {
   return !secretKey || (0, _util.u8aEmpty)(secretKey);
 }
-
 function vrfHash(proof, context, extra) {
   return (0, _utilCrypto.blake2AsU8a)((0, _util.u8aConcat)(context || '', extra || '', proof));
 }
+
 /**
  * @name createPair
  * @summary Creates a keyring pair object
@@ -81,8 +75,6 @@ function vrfHash(proof, context, extra) {
  * an `encoded` property that is assigned with the encoded public key in hex format, and an `encoding`
  * property that indicates whether the public key value of the `encoded` property is encoded or not.
  */
-
-
 function createPair(_ref, _ref2) {
   let {
     toSS58,
@@ -95,10 +87,8 @@ function createPair(_ref, _ref2) {
   let meta = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
   let encoded = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
   let encTypes = arguments.length > 4 ? arguments[4] : undefined;
-
   const decodePkcs8 = (passphrase, userEncoded) => {
     const decoded = (0, _decode.decodePair)(passphrase, userEncoded || encoded, encTypes);
-
     if (decoded.secretKey.length === 64) {
       publicKey = decoded.publicKey;
       secretKey = decoded.secretKey;
@@ -108,50 +98,40 @@ function createPair(_ref, _ref2) {
       secretKey = pair.secretKey;
     }
   };
-
   const recode = passphrase => {
     isLocked(secretKey) && encoded && decodePkcs8(passphrase, encoded);
     encoded = (0, _encode.encodePair)({
       publicKey,
       secretKey
     }, passphrase); // re-encode, latest version
-
     encTypes = undefined; // swap to defaults, latest version follows
 
     return encoded;
   };
-
   const encodeAddress = () => {
     const raw = TYPE_ADDRESS[type](publicKey);
     return type === 'ethereum' ? (0, _utilCrypto.ethereumEncode)(raw) : toSS58(raw);
   };
-
   return {
     get address() {
       return encodeAddress();
     },
-
     get addressRaw() {
       const raw = TYPE_ADDRESS[type](publicKey);
       return type === 'ethereum' ? raw.slice(-20) : raw;
     },
-
     get isLocked() {
       return isLocked(secretKey);
     },
-
     get meta() {
       return meta;
     },
-
     get publicKey() {
       return publicKey;
     },
-
     get type() {
       return type;
     },
-
     // eslint-disable-next-line sort-keys
     decodePkcs8,
     decryptMessage: (encryptedMessageWithNonce, senderPublicKey) => {
@@ -160,7 +140,6 @@ function createPair(_ref, _ref2) {
       } else if (['ecdsa', 'ethereum'].includes(type)) {
         throw new Error('Secp256k1 not supported yet');
       }
-
       const messageU8a = (0, _util.u8aToU8a)(encryptedMessageWithNonce);
       return (0, _utilCrypto.naclOpen)(messageU8a.slice(24, messageU8a.length), messageU8a.slice(0, 24), (0, _utilCrypto.convertPublicKeyToCurve25519)((0, _util.u8aToU8a)(senderPublicKey)), (0, _utilCrypto.convertSecretKeyToCurve25519)(secretKey));
     },
@@ -170,7 +149,6 @@ function createPair(_ref, _ref2) {
       } else if (isLocked(secretKey)) {
         throw new Error('Cannot derive on a locked keypair');
       }
-
       const {
         path
       } = (0, _utilCrypto.keyExtractPath)(suri);
@@ -192,7 +170,6 @@ function createPair(_ref, _ref2) {
       } else if (['ecdsa', 'ethereum'].includes(type)) {
         throw new Error('Secp256k1 not supported yet');
       }
-
       const {
         nonce,
         sealed
@@ -207,11 +184,9 @@ function createPair(_ref, _ref2) {
     },
     sign: function (message) {
       let options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-
       if (isLocked(secretKey)) {
         throw new Error('Cannot sign with a locked key pair');
       }
-
       return (0, _util.u8aConcat)(options.withType ? TYPE_PREFIX[type] : SIG_TYPE_NONE, TYPE_SIGNATURE[type]((0, _util.u8aToU8a)(message), {
         publicKey,
         secretKey
@@ -237,13 +212,11 @@ function createPair(_ref, _ref2) {
       if (isLocked(secretKey)) {
         throw new Error('Cannot sign with a locked key pair');
       }
-
       if (type === 'sr25519') {
         return (0, _utilCrypto.sr25519VrfSign)(message, {
           secretKey
         }, context, extra);
       }
-
       const proof = TYPE_SIGNATURE[type]((0, _util.u8aToU8a)(message), {
         publicKey,
         secretKey
@@ -254,7 +227,6 @@ function createPair(_ref, _ref2) {
       if (type === 'sr25519') {
         return (0, _utilCrypto.sr25519VrfVerify)(message, vrfResult, publicKey, context, extra);
       }
-
       const result = (0, _utilCrypto.signatureVerify)(message, (0, _util.u8aConcat)(TYPE_PREFIX[type], vrfResult.subarray(32)), TYPE_ADDRESS[type]((0, _util.u8aToU8a)(signerPublic)));
       return result.isValid && (0, _util.u8aEq)(vrfResult.subarray(0, 32), vrfHash(vrfResult.subarray(32), context, extra));
     }

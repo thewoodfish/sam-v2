@@ -22,6 +22,7 @@ export declare class MockProvider implements ProviderInterface {
     clone(): MockProvider;
     connect(): Promise<void>;
     disconnect(): Promise<void>;
+    get isClonable(): boolean;
     get isConnected(): boolean;
     on(type: ProviderInterfaceEmitted, sub: ProviderInterfaceEmitCb): () => void;
     send<T = any>(method: string, params: unknown[]): Promise<T>;

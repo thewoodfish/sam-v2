@@ -15,7 +15,5 @@ Object.defineProperty(exports, "toPromiseMethod", {
     return _decorateMethod.toPromiseMethod;
   }
 });
-
 var _Api = require("./Api");
-
 var _decorateMethod = require("./decorateMethod");
