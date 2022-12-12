@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /* eslint-disable sort-keys */
+
 import { objectSpread } from '@polkadot/util';
 const sharedTypes = {
   // Anchor

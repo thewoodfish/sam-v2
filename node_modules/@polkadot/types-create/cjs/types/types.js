@@ -8,7 +8,6 @@ exports.TypeDefInfo = void 0;
 // SPDX-License-Identifier: Apache-2.0
 let TypeDefInfo;
 exports.TypeDefInfo = TypeDefInfo;
-
 (function (TypeDefInfo) {
   TypeDefInfo[TypeDefInfo["BTreeMap"] = 0] = "BTreeMap";
   TypeDefInfo[TypeDefInfo["BTreeSet"] = 1] = "BTreeSet";

@@ -19,13 +19,9 @@ Object.defineProperty(exports, "packageInfo", {
     return _packageInfo.packageInfo;
   }
 });
-
 var _packageInfo = require("./packageInfo");
-
 var _types = require("./types");
-
 var _create = require("./create");
-
 Object.keys(_create).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
@@ -37,9 +33,7 @@ Object.keys(_create).forEach(function (key) {
     }
   });
 });
-
 var _util = require("./util");
-
 Object.keys(_util).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;

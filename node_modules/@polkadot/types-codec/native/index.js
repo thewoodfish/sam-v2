@@ -1,5 +1,6 @@
 // Copyright 2017-2022 @polkadot/types-codec authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 export { bool, bool as Bool } from "./Bool.js";
 export { CodecDate, CodecDate as Date } from "./Date.js";
 export { Float } from "./Float.js";

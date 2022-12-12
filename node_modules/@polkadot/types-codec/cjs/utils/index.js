@@ -81,21 +81,12 @@ Object.defineProperty(exports, "typesToMap", {
     return _typesToMap.typesToMap;
   }
 });
-
 var _compareArray = require("./compareArray");
-
 var _compareMap = require("./compareMap");
-
 var _compareSet = require("./compareSet");
-
 var _decodeU8a = require("./decodeU8a");
-
 var _mapToTypeMap = require("./mapToTypeMap");
-
 var _typeToConstructor = require("./typeToConstructor");
-
 var _sanitize = require("./sanitize");
-
 var _sortValues = require("./sortValues");
-
 var _typesToMap = require("./typesToMap");

@@ -803,7 +803,7 @@ async function createKiltClaim(req, res) {
                     console.log(ctype);
 
                     (async () => {
-                        // try {
+                        try {
                             // get attributes stored onchain for Samaritan
                             let attr = (await api.query.samaritan.attrRegistry(auth.did)).toHuman();
                             if (!attr) throw new Error("samaritan has no attribute to claim.")
@@ -847,6 +847,7 @@ async function createKiltClaim(req, res) {
                                                                     throw new Error("could not generate credential.")
 
                                                                 if (section.match("samaritan", "i")) {
+                                                                    // save credential onchain
                                                                     return res.send({
                                                                         data: { 
                                                                             msg: "KILT credential successfully created."
@@ -865,14 +866,14 @@ async function createKiltClaim(req, res) {
                             } else {
                                 throw new Error("samaritan does not have all attributes required by cType")
                             }
-                        // } catch (e) {
-                        //     return res.send({
-                        //         data: { 
-                        //             msg: e.toString()
-                        //         },
-                        //         error: true
-                        //     })
-                        // }
+                        } catch (e) {
+                            return res.send({
+                                data: { 
+                                    msg: e.toString()
+                                },
+                                error: true
+                            })
+                        }
                     })();
                 });
             } else 
@@ -937,7 +938,7 @@ async function authorKiltCtype(did, req, res) {
 async function attestKiltCredential(req, res) {
     const auth = isAuth(req.nonce);
     if (auth.is_auth) {
-        // first get KILT DID
+        // first get credential
         let coll = (await api.query.samaritan.didRegistry(auth.did)).toHuman();
 
         // check the length of coll

@@ -1,7 +1,7 @@
 // Copyright 2017-2022 @polkadot/types-create authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-export let TypeDefInfo;
 
+export let TypeDefInfo;
 (function (TypeDefInfo) {
   TypeDefInfo[TypeDefInfo["BTreeMap"] = 0] = "BTreeMap";
   TypeDefInfo[TypeDefInfo["BTreeSet"] = 1] = "BTreeSet";

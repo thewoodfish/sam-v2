@@ -159,5 +159,4 @@ Object.defineProperty(exports, "WrapperOpaque", {
     return _typesCodec.WrapperOpaque;
   }
 });
-
 var _typesCodec = require("@polkadot/types-codec");

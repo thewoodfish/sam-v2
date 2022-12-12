@@ -4,9 +4,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.usize = void 0;
-
 var _U = require("./U32");
-
 // Copyright 2017-2022 @polkadot/types-codec authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -22,7 +20,5 @@ class usize extends _U.u32 {
     super(registry, value);
     throw new Error('The `usize` type should not be used. Since it is platform-specific, it creates incompatibilities between native (generally u64) and WASM (always u32) code. Use one of the `u32` or `u64` types explicitly.');
   }
-
 }
-
 exports.usize = usize;

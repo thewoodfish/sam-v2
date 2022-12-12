@@ -1,21 +1,18 @@
 // Copyright 2017-2022 @polkadot/types-create authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { isNumber, isUndefined, objectSpread, stringify } from '@polkadot/util';
 import { TypeDefInfo } from "../types/index.js";
-
 const stringIdentity = value => value.toString();
-
 const INFO_WRAP = ['BTreeMap', 'BTreeSet', 'Compact', 'HashMap', 'Option', 'Result', 'Vec'];
 export function paramsNotation(outer, inner, transform = stringIdentity) {
   return `${outer}${inner ? `<${(Array.isArray(inner) ? inner : [inner]).map(transform).join(', ')}>` : ''}`;
 }
-
 function encodeWithParams(registry, typeDef, outer) {
   const {
     info,
     sub
   } = typeDef;
-
   switch (info) {
     case TypeDefInfo.BTreeMap:
     case TypeDefInfo.BTreeSet:
@@ -31,33 +28,27 @@ function encodeWithParams(registry, typeDef, outer) {
     case TypeDefInfo.WrapperOpaque:
       return paramsNotation(outer, sub, p => encodeTypeDef(registry, p));
   }
-
   throw new Error(`Unable to encode ${stringify(typeDef)} with params`);
 }
-
 function encodeSubTypes(registry, sub, asEnum, extra) {
   const names = sub.map(({
     name
   }) => name);
-
   if (!names.every(n => !!n)) {
     throw new Error(`Subtypes does not have consistent names, ${names.join(', ')}`);
   }
-
   const inner = objectSpread({}, extra);
-
   for (let i = 0; i < sub.length; i++) {
     const def = sub[i];
     inner[def.name] = encodeTypeDef(registry, def);
   }
-
   return stringify(asEnum ? {
     _enum: inner
   } : inner);
-} // We setup a record here to ensure we have comprehensive coverage (any item not covered will result
+}
+
+// We setup a record here to ensure we have comprehensive coverage (any item not covered will result
 // in a compile-time error with the missing index)
-
-
 const encoders = {
   [TypeDefInfo.BTreeMap]: (registry, typeDef) => encodeWithParams(registry, typeDef, 'BTreeMap'),
   [TypeDefInfo.BTreeSet]: (registry, typeDef) => encodeWithParams(registry, typeDef, 'BTreeSet'),
@@ -72,10 +63,10 @@ const encoders = {
   }) => {
     if (!Array.isArray(sub)) {
       throw new Error('Unable to encode Enum type');
-    } // c-like enums have all Null entries
+    }
+
+    // c-like enums have all Null entries
     // TODO We need to take the disciminant into account and auto-add empty entries
-
-
     return sub.every(({
       type
     }) => type === 'Null') ? stringify({
@@ -108,7 +99,6 @@ const encoders = {
     if (!Array.isArray(sub)) {
       throw new Error('Unable to encode Set type');
     }
-
     return stringify({
       _set: sub.reduce((all, {
         index,
@@ -132,7 +122,6 @@ const encoders = {
     if (!Array.isArray(sub)) {
       throw new Error('Unable to encode Struct type');
     }
-
     return encodeSubTypes(registry, sub, false, alias ? {
       _alias: [...alias.entries()].reduce((all, [k, v]) => objectSpread(all, {
         [k]: v
@@ -145,7 +134,6 @@ const encoders = {
     if (!Array.isArray(sub)) {
       throw new Error('Unable to encode Tuple type');
     }
-
     return `(${sub.map(type => encodeTypeDef(registry, type)).join(',')})`;
   },
   [TypeDefInfo.UInt]: (registry, {
@@ -159,17 +147,14 @@ const encoders = {
     if (!isNumber(length) || !sub || Array.isArray(sub)) {
       throw new Error('Unable to encode VecFixed type');
     }
-
     return `[${sub.type};${length}]`;
   },
   [TypeDefInfo.WrapperKeepOpaque]: (registry, typeDef) => encodeWithParams(registry, typeDef, 'WrapperKeepOpaque'),
   [TypeDefInfo.WrapperOpaque]: (registry, typeDef) => encodeWithParams(registry, typeDef, 'WrapperOpaque')
 };
-
 function encodeType(registry, typeDef, withLookup = true) {
   return withLookup && typeDef.lookupName ? typeDef.lookupName : encoders[typeDef.info](registry, typeDef);
 }
-
 export function encodeTypeDef(registry, typeDef) {
   // In the case of contracts we do have the unfortunate situation where the displayName would
   // refer to "Option" when it is an option. For these, string it out, only using when actually

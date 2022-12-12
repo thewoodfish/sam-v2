@@ -69,19 +69,11 @@ Object.defineProperty(exports, "bool", {
     return _Bool.bool;
   }
 });
-
 var _Bool = require("./Bool");
-
 var _Date = require("./Date");
-
 var _Float = require("./Float");
-
 var _Json = require("./Json");
-
 var _Raw = require("./Raw");
-
 var _Set = require("./Set");
-
 var _Struct = require("./Struct");
-
 var _Text = require("./Text");

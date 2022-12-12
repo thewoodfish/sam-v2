@@ -75,27 +75,15 @@ Object.defineProperty(exports, "VecFixed", {
     return _VecFixed.VecFixed;
   }
 });
-
 var _Compact = require("./Compact");
-
 var _DoNotConstruct = require("./DoNotConstruct");
-
 var _Enum = require("./Enum");
-
 var _Int = require("./Int");
-
 var _Null = require("./Null");
-
 var _Option = require("./Option");
-
 var _Result = require("./Result");
-
 var _Tuple = require("./Tuple");
-
 var _UInt = require("./UInt");
-
 var _Vec = require("./Vec");
-
 var _VecAny = require("./VecAny");
-
 var _VecFixed = require("./VecFixed");

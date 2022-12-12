@@ -3,9 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-
 var _codec = require("./codec");
-
 Object.keys(_codec).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (key in exports && exports[key] === _codec[key]) return;
@@ -16,9 +14,7 @@ Object.keys(_codec).forEach(function (key) {
     }
   });
 });
-
 var _helpers = require("./helpers");
-
 Object.keys(_helpers).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (key in exports && exports[key] === _helpers[key]) return;
@@ -29,9 +25,7 @@ Object.keys(_helpers).forEach(function (key) {
     }
   });
 });
-
 var _interfaces = require("./interfaces");
-
 Object.keys(_interfaces).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (key in exports && exports[key] === _interfaces[key]) return;
@@ -42,9 +36,7 @@ Object.keys(_interfaces).forEach(function (key) {
     }
   });
 });
-
 var _registry = require("./registry");
-
 Object.keys(_registry).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (key in exports && exports[key] === _registry[key]) return;

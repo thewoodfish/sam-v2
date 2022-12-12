@@ -1,21 +1,26 @@
 // Copyright 2017-2022 @polkadot/types-codec authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-import { u8aToHex } from '@polkadot/util';
-/** @internal */
 
-function formatFailure(registry, result, {
+import { u8aToHex } from '@polkadot/util';
+
+/** @internal */
+function formatFailure(registry, fn, result, {
   message
 }, u8a, i, count, Type, key) {
   let type = '';
-
   try {
     type = `: ${new Type(registry).toRawType()}`;
-  } catch {// ignore
-  } // console.error(JSON.stringify(result, null, 2));
+  } catch {
+    // ignore
+  }
 
+  // This is extra debugging info (we most-probably want this in in some way, shape or form,
+  // but at this point not quite sure how to include and format it (it can be quite massive)
+  // console.error(JSON.stringify(result, null, 2));
 
-  return `decodeU8a: failed at ${u8aToHex(u8a.subarray(0, 16))}…${key ? ` on ${key}` : ''} (index ${i}/${count})${type}:: ${message}`;
+  return `${fn}: failed at ${u8aToHex(u8a.subarray(0, 16))}…${key ? ` on ${key}` : ''} (index ${i + 1}/${count})${type}:: ${message}`;
 }
+
 /**
  * @internal
  *
@@ -26,13 +31,10 @@ function formatFailure(registry, result, {
  * @param result - The result array (will be returned with values pushed)
  * @param types - The array of CodecClass to decode the U8a against.
  */
-
-
 export function decodeU8a(registry, result, u8a, [Types, keys]) {
   const count = result.length;
   let offset = 0;
   let i = 0;
-
   try {
     while (i < count) {
       const value = new Types[i](registry, u8a.subarray(offset));
@@ -41,23 +43,21 @@ export function decodeU8a(registry, result, u8a, [Types, keys]) {
       i++;
     }
   } catch (error) {
-    throw new Error(formatFailure(registry, result, error, u8a.subarray(offset), i, count, Types[i], keys[i]));
+    throw new Error(formatFailure(registry, 'decodeU8a', result, error, u8a.subarray(offset), i, count, Types[i], keys[i]));
   }
-
   return [result, offset];
 }
+
 /**
  * @internal
  *
  * Split from decodeU8a since this is specialized to zip returns ... while we duplicate, this
  * is all on the hot-path, so it is not great, however there is (some) method behind the madness
  */
-
 export function decodeU8aStruct(registry, result, u8a, [Types, keys]) {
   const count = result.length;
   let offset = 0;
   let i = 0;
-
   try {
     while (i < count) {
       const value = new Types[i](registry, u8a.subarray(offset));
@@ -66,23 +66,21 @@ export function decodeU8aStruct(registry, result, u8a, [Types, keys]) {
       i++;
     }
   } catch (error) {
-    throw new Error(formatFailure(registry, result, error, u8a.subarray(offset), i, count, Types[i], keys[i]));
+    throw new Error(formatFailure(registry, 'decodeU8aStruct', result, error, u8a.subarray(offset), i, count, Types[i], keys[i]));
   }
-
   return [result, offset];
 }
+
 /**
  * @internal
  *
  * Split from decodeU8a since this is specialized to 1 instance ... while we duplicate, this
  * is all on the hot-path, so it is not great, however there is (some) method behind the madness
  */
-
 export function decodeU8aVec(registry, result, u8a, startAt, Type) {
   const count = result.length;
   let offset = startAt;
   let i = 0;
-
   try {
     while (i < count) {
       const value = new Type(registry, u8a.subarray(offset));
@@ -91,8 +89,7 @@ export function decodeU8aVec(registry, result, u8a, startAt, Type) {
       i++;
     }
   } catch (error) {
-    throw new Error(formatFailure(registry, result, error, u8a.subarray(offset), i, count, Type));
+    throw new Error(formatFailure(registry, 'decodeU8aVec', result, error, u8a.subarray(offset), i, count, Type));
   }
-
   return [offset, offset - startAt];
 }

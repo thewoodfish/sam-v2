@@ -1,5 +1,6 @@
 // Copyright 2017-2022 @polkadot/types-codec authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 export { f32, f32 as F32 } from "./F32.js";
 export { f64, f64 as F64 } from "./F64.js";
 export { i8, i8 as I8 } from "./I8.js";

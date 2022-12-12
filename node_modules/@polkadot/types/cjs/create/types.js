@@ -9,5 +9,4 @@ Object.defineProperty(exports, "TypeDefInfo", {
     return _typesCreate.TypeDefInfo;
   }
 });
-
 var _typesCreate = require("@polkadot/types-create");

@@ -3,9 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-
 var _typesCreate = require("@polkadot/types-create");
-
 Object.keys(_typesCreate).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (key in exports && exports[key] === _typesCreate[key]) return;
@@ -16,9 +14,7 @@ Object.keys(_typesCreate).forEach(function (key) {
     }
   });
 });
-
 var _createClass = require("./createClass");
-
 Object.keys(_createClass).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (key in exports && exports[key] === _createClass[key]) return;
@@ -29,9 +25,7 @@ Object.keys(_createClass).forEach(function (key) {
     }
   });
 });
-
 var _createType = require("./createType");
-
 Object.keys(_createType).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (key in exports && exports[key] === _createType[key]) return;
@@ -42,9 +36,7 @@ Object.keys(_createType).forEach(function (key) {
     }
   });
 });
-
 var _lazy = require("./lazy");
-
 Object.keys(_lazy).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (key in exports && exports[key] === _lazy[key]) return;
@@ -55,9 +47,7 @@ Object.keys(_lazy).forEach(function (key) {
     }
   });
 });
-
 var _registry = require("./registry");
-
 Object.keys(_registry).forEach(function (key) {
   if (key === "default" || key === "__esModule") return;
   if (key in exports && exports[key] === _registry[key]) return;

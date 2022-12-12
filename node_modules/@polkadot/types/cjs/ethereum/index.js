@@ -15,7 +15,5 @@ Object.defineProperty(exports, "GenericEthereumLookupSource", {
     return _LookupSource.GenericEthereumLookupSource;
   }
 });
-
 var _AccountId = require("./AccountId");
-
 var _LookupSource = require("./LookupSource");

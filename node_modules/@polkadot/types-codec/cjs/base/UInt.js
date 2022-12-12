@@ -4,9 +4,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.UInt = void 0;
-
 var _Int = require("../abstract/Int");
-
 // Copyright 2017-2022 @polkadot/types-codec authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -26,14 +24,10 @@ class UInt extends _Int.AbstractInt {
       constructor(registry, value) {
         super(registry, value, bitLength);
       }
-
       toRawType() {
         return typeName || super.toRawType();
       }
-
     };
   }
-
 }
-
 exports.UInt = UInt;

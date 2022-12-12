@@ -183,33 +183,18 @@ Object.defineProperty(exports, "usize", {
     return _USize.usize;
   }
 });
-
 var _F = require("./F32");
-
 var _F2 = require("./F64");
-
 var _I = require("./I8");
-
 var _I2 = require("./I16");
-
 var _I3 = require("./I32");
-
 var _I4 = require("./I64");
-
 var _I5 = require("./I128");
-
 var _I6 = require("./I256");
-
 var _U = require("./U8");
-
 var _U2 = require("./U16");
-
 var _U3 = require("./U32");
-
 var _U4 = require("./U64");
-
 var _U5 = require("./U128");
-
 var _U6 = require("./U256");
-
 var _USize = require("./USize");

@@ -21,9 +21,6 @@ Object.defineProperty(exports, "AbstractInt", {
     return _Int.AbstractInt;
   }
 });
-
 var _Array = require("./Array");
-
 var _Base = require("./Base");
-
 var _Int = require("./Int");

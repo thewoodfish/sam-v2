@@ -1,7 +1,6 @@
 "use strict";
 
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -23,9 +22,6 @@ Object.defineProperty(exports, "westend", {
     return _westend.default;
   }
 });
-
 var _kusama = _interopRequireDefault(require("./kusama"));
-
 var _polkadot = _interopRequireDefault(require("./polkadot"));
-
 var _westend = _interopRequireDefault(require("./westend"));

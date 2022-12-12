@@ -4,9 +4,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.VecAny = void 0;
-
 var _Array = require("../abstract/Array");
-
 // Copyright 2017-2022 @polkadot/types-codec authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -25,7 +23,5 @@ class VecAny extends _Array.AbstractArray {
     // FIXME This is basically an any type, cannot instantiate via createType
     return 'Vec<Codec>';
   }
-
 }
-
 exports.VecAny = VecAny;

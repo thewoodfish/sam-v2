@@ -1,6 +1,8 @@
 // Copyright 2017-2022 @polkadot/types-codec authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { AbstractInt } from "../abstract/Int.js";
+
 /**
  * @name Int
  * @description
@@ -11,23 +13,18 @@ import { AbstractInt } from "../abstract/Int.js";
  * is available here.
  * @noInheritDoc
  */
-
 export class Int extends AbstractInt {
   constructor(registry, value = 0, bitLength) {
     super(registry, value, bitLength, true);
   }
-
   static with(bitLength, typeName) {
     return class extends Int {
       constructor(registry, value) {
         super(registry, value, bitLength);
       }
-
       toRawType() {
         return typeName || super.toRawType();
       }
-
     };
   }
-
 }

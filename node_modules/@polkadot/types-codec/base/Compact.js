@@ -1,12 +1,11 @@
 // Copyright 2017-2022 @polkadot/types-codec authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { compactFromU8a, compactFromU8aLim, compactToU8a, isU8a } from '@polkadot/util';
 import { typeToConstructor } from "../utils/index.js";
-
 function noopSetDefinition(d) {
   return d;
 }
-
 function decodeCompact(registry, Type, value) {
   if (isU8a(value)) {
     const [decodedLength, bn] = (value[0] & 0b11) < 0b11 ? compactFromU8aLim(value) : compactFromU8a(value);
@@ -17,9 +16,9 @@ function decodeCompact(registry, Type, value) {
   } else if (value instanceof Type) {
     return [value, 0];
   }
-
   return [new Type(registry, value), 0];
 }
+
 /**
  * @name Compact
  * @description
@@ -28,12 +27,9 @@ function decodeCompact(registry, Type, value) {
  * used by other types to add length-prefixed encoding, or in the case of wrapped types, taking
  * a number and making the compact representation thereof
  */
-
-
 export class Compact {
   #Type;
   #raw;
-
   constructor(registry, Type, value = 0, {
     definition,
     setDefinition = noopSetDefinition
@@ -44,12 +40,11 @@ export class Compact {
     this.initialU8aLength = decodedLength;
     this.#raw = raw;
   }
-
   static with(Type) {
-    let definition; // eslint-disable-next-line no-return-assign
+    let definition;
 
+    // eslint-disable-next-line no-return-assign
     const setDefinition = d => definition = d;
-
     return class extends Compact {
       constructor(registry, value) {
         super(registry, Type, value, {
@@ -57,148 +52,129 @@ export class Compact {
           setDefinition
         });
       }
-
     };
   }
+
   /**
    * @description The length of the value when encoded as a Uint8Array
    */
-
-
   get encodedLength() {
     return this.toU8a().length;
   }
+
   /**
    * @description returns a hash of the contents
    */
-
-
   get hash() {
     return this.registry.hash(this.toU8a());
   }
+
   /**
    * @description Checks if the value is an empty value
    */
-
-
   get isEmpty() {
     return this.#raw.isEmpty;
   }
+
   /**
    * @description Returns the number of bits in the value
    */
-
-
   bitLength() {
     return this.#raw.bitLength();
   }
+
   /**
    * @description Compares the value of the input to see if there is a match
    */
-
-
   eq(other) {
     return this.#raw.eq(other instanceof Compact ? other.#raw : other);
   }
+
   /**
    * @description Returns a breakdown of the hex encoding for this Codec
    */
-
-
   inspect() {
     return {
       outer: [this.toU8a()]
     };
   }
+
   /**
    * @description Returns a BigInt representation of the number
    */
-
-
   toBigInt() {
     return this.#raw.toBigInt();
   }
+
   /**
    * @description Returns the BN representation of the number
    */
-
-
   toBn() {
     return this.#raw.toBn();
   }
+
   /**
    * @description Returns a hex string representation of the value. isLe returns a LE (number-only) representation
    */
-
-
   toHex(isLe) {
     return this.#raw.toHex(isLe);
   }
+
   /**
    * @description Converts the Object to to a human-friendly JSON, with additional fields, expansion and formatting of information
    */
-
-
   toHuman(isExtended) {
     return this.#raw.toHuman(isExtended);
   }
+
   /**
    * @description Converts the Object to JSON, typically used for RPC transfers
    */
-
-
   toJSON() {
     return this.#raw.toJSON();
   }
+
   /**
    * @description Returns the number representation for the value
    */
-
-
   toNumber() {
     return this.#raw.toNumber();
   }
+
   /**
    * @description Converts the value in a best-fit primitive form
    */
-
-
   toPrimitive() {
     return this.#raw.toPrimitive();
   }
+
   /**
    * @description Returns the base runtime type name for this instance
    */
-
-
   toRawType() {
     return `Compact<${this.registry.getClassName(this.#Type) || this.#raw.toRawType()}>`;
   }
+
   /**
    * @description Returns the string representation of the value
    */
-
-
   toString() {
     return this.#raw.toString();
   }
+
   /**
    * @description Encodes the value as a Uint8Array as per the SCALE specifications
    * @param isBare true when the value has none of the type-specific prefixes (internal)
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-
-
   toU8a(isBare) {
     return compactToU8a(this.#raw.toBn());
   }
+
   /**
    * @description Returns the embedded [[UInt]] or [[Moment]] value
    */
-
-
   unwrap() {
     return this.#raw;
   }
-
 }

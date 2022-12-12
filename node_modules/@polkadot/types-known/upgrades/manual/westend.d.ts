@@ -1,3 +1,3 @@
-import type { ChainUpgradesManual } from '../types';
-declare const upgrades: ChainUpgradesManual;
+import type { ChainUpgradesRaw } from '../types';
+declare const upgrades: ChainUpgradesRaw;
 export default upgrades;

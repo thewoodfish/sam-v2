@@ -12,6 +12,9 @@ export declare function getSpecExtensions({ knownTypes }: Registry, chainName: T
  * @description Based on the chain and runtimeVersion, get the applicable types (ready for registration)
  */
 export declare function getSpecTypes({ knownTypes }: Registry, chainName: Text | string, specName: Text | string, specVersion: bigint | BN | number): RegistryTypes;
+/**
+ * @description Based on the chain or spec, return the hasher used
+ */
 export declare function getSpecHasher({ knownTypes }: Registry, chainName: Text | string, specName: Text | string): CodecHasher | null;
 /**
  * @description Based on the chain and runtimeVersion, get the applicable rpc definitions (ready for registration)
