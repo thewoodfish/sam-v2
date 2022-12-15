@@ -836,6 +836,9 @@ async function createKiltClaim(req, res) {
                                                 // modify DID document
                                                 ldid.service[0].serviceEndpoint = `http://ipfs.io/ipfs/${cid}`;
 
+                                                // hash credential
+                                                let hashed_cred = blake2AsHex(JSON.stringify(creds));
+
                                                 (async function () {
                                                     // save to chain
                                                     const transfer = api.tx.samaritan.updateLightDoc(auth.did, util.decryptData(BOLD_TEXT, ldid));
@@ -847,13 +850,31 @@ async function createKiltClaim(req, res) {
                                                                     throw new Error("could not generate credential.")
 
                                                                 if (section.match("samaritan", "i")) {
-                                                                    // save credential onchain
-                                                                    return res.send({
-                                                                        data: { 
-                                                                            msg: "KILT credential successfully created."
-                                                                        },
-                                                                        error: false
-                                                                    })
+
+                                                                    // save credential hash
+                                                                    (async function () {
+                                                                        const transfer = api.tx.samaritan.saveCredential(hashed_cred, cid);
+                                                                        const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+                                                                            if (status.isInBlock) {
+                                                                                events.forEach(({ event: { data, method, section }, phase }) => {
+                                                                                    // check for errors
+                                                                                    if (section.match("system", "i") && data.toString().indexOf("error") != -1)
+                                                                                        throw new Error("could not generate credential.")
+
+                                                                                    if (section.match("samaritan", "i")) {
+                                                                                        // save credential onchain
+                                                                                        return res.send({
+                                                                                            data: { 
+                                                                                                cred_id: hashed_cred,
+                                                                                                msg: "KILT credential successfully created."
+                                                                                            },
+                                                                                            error: false
+                                                                                        })
+                                                                                    } 
+                                                                                });
+                                                                            }
+                                                                        });
+                                                                    })();
                                                                 } 
                                                             });
                                                         }
@@ -935,39 +956,55 @@ async function authorKiltCtype(did, req, res) {
     });
 }
 
-async function attestKiltCredential(req, res) {
+async function attestCredential(req, res) {
     const auth = isAuth(req.nonce);
     if (auth.is_auth) {
-        // first get credential
-        let coll = (await api.query.samaritan.didRegistry(auth.did)).toHuman();
+        try {
+            // get credential cid first
+            let cid = (await api.query.samaritan.vcRegistry(req.credHash)).toHuman();
+            if (!cid) throw new Error(`could not retrieve credential with hash "${req.credHash}`);
 
-        // check the length of coll
-        if (coll.length == 1) {
-            // author a new full DID for creating making onchain KILT DID transactions
-            let kfdid = await kilt.createFullDid();
+            // get did document of attester
+            let docs = (await api.query.samaritan.didRegistry(auth.did)).toHuman();
 
-            let kf_hash = util.encryptData(BOLD_TEXT, JSON.stringify(kfdid));
+            console.log(docs);
 
-            // save onchain 
-            const transfer = api.tx.samaritan.uploadDid(auth.did, kf_hash);
-            const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
-                if (status.isInBlock) {
-                    events.forEach(({ event: { data, method, section }, phase }) => {
-                        // check for errors
-                        if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
-                            return res.send({
-                                data: { msg: "could not create cType" }, error: true
-                            }) 
-                        } 
+             // check the length of coll
+            if (docs.length == 1) {
+                // author a new full DID for creating making onchain KILT DID transactions
+                let kfdid = await kilt.createFullDid();
 
-                        if (section.match("samaritan", "i")) {
-                            authorKiltCtype(auth.did, req, res);
-                        } 
-                    });
-                }
-            });
-        } else 
-            authorKiltCtype(auth.did, req, res);
+                let kf_hash = util.encryptData(BOLD_TEXT, JSON.stringify(kfdid));
+
+                // save onchain 
+                const transfer = api.tx.samaritan.uploadDid(auth.did, kf_hash);
+                const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+                    if (status.isInBlock) {
+                        events.forEach(({ event: { data, method, section }, phase }) => {
+                            // check for errors
+                            if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                                return res.send({
+                                    data: { msg: "could not create cType" }, error: true
+                                }) 
+                            } 
+
+                            if (section.match("samaritan", "i")) {
+                                attestKiltCredential(kf_hash, req, res, cid);
+                            } 
+                        });
+                    }
+                });
+            } else 
+                attestKiltCredential(docs[1], req, res, cid);
+
+        } catch (e) {
+            return res.send({
+                data: { 
+                    msg: e.toString()
+                },
+                error: true
+            })
+        }
 
     } else {
         return res.send({
@@ -977,6 +1014,67 @@ async function attestKiltCredential(req, res) {
             error: true
         })
     }
+}
+
+async function attestKiltCredential(docHash, req, res, uri) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        let doc = JSON.parse(util.decryptData(BOLD_TEXT, docHash));
+
+        try {
+            // get credential from IPFS
+            await storg.getFromIPFS(uri).then(claims => {
+                let cred = JSON.parse(claims);
+                let chosen;
+
+                // get the credential we want
+                for (var i = 0; i < cred.length; i++) {
+                    // take the credential hash
+                    if (blake2AsHex(cred[i] == req.docHash)) {
+                        chosen = cred[i];
+                        break;
+                    }
+                }
+
+                if (chosen) {
+                    (async function () {
+                        let success = await kilt.createAttestation(doc.fullDid.uri, doc.mnemonic, cred[0]);
+
+                        // attest credential
+                        if (success) {
+                            return res.send({
+                                data: { 
+                                    msg: "attestation successful."
+                                },
+                                error: false
+                            });
+                        } else 
+                            throw new Error ("attestation failed.");
+                    })();
+                } else 
+                    throw new Error ("credential not found.");
+            });
+        } catch (e) {
+            return res.send({
+                data: { 
+                    msg: e.toString()
+                },
+                error: true
+            })
+        }
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+            error: true
+        })
+    }
+}
+
+// fetch credential and read its content to its owner
+async function fetchCredential(req, res) {
+
 }
 
 
@@ -1097,6 +1195,15 @@ app.get('/create-claim', (req, res) => {
 // attest credential
 app.get('/attest', (req, res) => {
     attestCredential(req.query, res);
+})
+
+// fetch data from network
+app.get('/read-data', (req, res) => {
+    switch (req.query.arg1) {
+        case "--cred":
+            fetchCredential(req.query, res);
+            break;
+    }
 })
 
 

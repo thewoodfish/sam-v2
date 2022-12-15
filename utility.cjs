@@ -186,10 +186,18 @@ function extractClaimAttr(props, attrObj) {
     let claim = {};
     let ctProps = Object.keys(props);
 
-    for (var i = 0; i < ctProps.length; i++) 
-        if (Object.keys(attrObj).includes(ctProps[i])) 
-            claim[ctProps[i]] = attrObj[ctProps[i]];
-
+    for (var i = 0; i < ctProps.length; i++) {
+        if (Object.keys(attrObj).includes(ctProps[i])) {
+            switch (props[ctProps[i]].type) {
+                case 'integer':
+                    claim[ctProps[i]] = parseInt(attrObj[ctProps[i]]);
+                    break;
+                    
+                default:
+                    claim[ctProps[i]] = attrObj[ctProps[i]];
+            } 
+        }
+    }
     return claim;
 }
 

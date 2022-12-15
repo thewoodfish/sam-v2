@@ -200,59 +200,52 @@ export async function mintCType({ title, attr }, did_doc) {
     return ctype;
 }
 
-export function requestAttestation(claimer, ctype) {
-    // The claimer generates the claim they would like to get attested.
-    const claim = Kilt.Claim.fromCTypeAndClaimContents(
-        ctype,
-        {
-            name: 'Alice',
-            age: 29,
-            id: '123456789987654321',
-        },
-    
-        claimer.uri
-    );
-    
-    const credential = Kilt.Credential.fromClaim(claim);
-    return credential;
-}
-
 export async function createAttestation(
         attester,
-        submitterAccount,
-        signCallback,
+        mnemonic,
         credential
     ) {
-    const api = Kilt.ConfigService.get('api')
-
     // Create an attestation object and write its root hash on the chain
-    // using the provided attester's full DID.
-    const { cTypeHash, claimHash, delegationId } =
-    Kilt.Attestation.fromCredentialAndDid(credential, attester)
+    // using the provided attester's full DID.;
+    try {
+        const { authentication, encryption, attestation, delegation } = generateKeypairs(mnemonic);
+        const { cTypeHash, claimHash, delegationId } = Kilt.Attestation.fromCredentialAndDid(credential, attester);
 
-    // Write the attestation info on the chain.
-    const attestationTx = api.tx.attestation.add(
-        claimHash,
-        cTypeHash,
-        delegationId
-    )
+        // create signCallback
+        let signCallback = useSignCallback(attester, attestation);
 
-    const authorizedAttestationTx = await Kilt.Did.authorizeTx(
-        attester,
-        attestationTx,
-        signCallback,
-        submitterAccount.address
-    );
+        // Write the attestation info on the chain.
+        const attestationTx = api.tx.attestation.add(
+            claimHash,
+            cTypeHash,
+            delegationId
+        )
 
-    await Kilt.Blockchain.signAndSubmitTx(
-        authorizedAttestationTx,
-        submitterAccount
-    );
+        const authorizedAttestationTx = await Kilt.Did.authorizeTx(
+            attester,
+            attestationTx,
+            signCallback,
+            sam.address
+        );
+
+        await Kilt.Blockchain.signAndSubmitTx(
+            authorizedAttestationTx,
+            sam
+        );
+
+        return true;
+    } catch (e) {
+        return false;
+    }
+
 }
 
 export function createClaim(ctype, attr, did) {
     // first extract all the attributes needed and their values
     let claim_attr = util.extractClaimAttr(ctype.properties, attr);
+
+    console.log(ctype);
+    console.log(claim_attr);
 
     // The claimer generates the claim they would like to get attested.
     const claim = Kilt.Claim.fromCTypeAndClaimContents(
@@ -263,35 +256,4 @@ export function createClaim(ctype, attr, did) {
 
     const credential = Kilt.Credential.fromClaim(claim);
     return credential;
-}
-
-export async function createAttestation(
-    attester,
-    submitterAccount,
-    signCallback,
-    credential
-) {
-    // Create an attestation object and write its root hash on the chain
-    // using the provided attester's full DID.
-    const { cTypeHash, claimHash, delegationId } =
-        Kilt.Attestation.fromCredentialAndDid(credential, attester)
-
-    // Write the attestation info on the chain.
-    const attestationTx = api.tx.attestation.add(
-        claimHash,
-        cTypeHash,
-        delegationId
-    )
-
-    const authorizedAttestationTx = await Kilt.Did.authorizeTx(
-        attester,
-        attestationTx,
-        signCallback,
-        submitterAccount.address
-    )
-
-    await Kilt.Blockchain.signAndSubmitTx(
-        authorizedAttestationTx,
-        submitterAccount
-    )
 }
