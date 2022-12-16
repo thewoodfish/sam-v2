@@ -244,9 +244,6 @@ export function createClaim(ctype, attr, did) {
     // first extract all the attributes needed and their values
     let claim_attr = util.extractClaimAttr(ctype.properties, attr);
 
-    console.log(ctype);
-    console.log(claim_attr);
-
     // The claimer generates the claim they would like to get attested.
     const claim = Kilt.Claim.fromCTypeAndClaimContents(
         ctype,

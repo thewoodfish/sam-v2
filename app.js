@@ -841,7 +841,7 @@ async function createKiltClaim(req, res) {
 
                                                 (async function () {
                                                     // save to chain
-                                                    const transfer = api.tx.samaritan.updateLightDoc(auth.did, util.decryptData(BOLD_TEXT, ldid));
+                                                    const transfer = api.tx.samaritan.updateLightDoc(auth.did, util.encryptData(BOLD_TEXT, JSON.stringify(ldid)));
                                                     const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
                                                         if (status.isInBlock) {
                                                             events.forEach(({ event: { data, method, section }, phase }) => {
@@ -1074,7 +1074,99 @@ async function attestKiltCredential(docHash, req, res, uri) {
 
 // fetch credential and read its content to its owner
 async function fetchCredential(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        try {
+            // get cid of credential
+            let cid = (await api.query.samaritan.vcRegistry(req.arg2)).toHuman();
+            if (!cid) throw new Error(`could not retrieve credential with hash "${req.arg2}"`);
 
+            // get from ipfs
+            await storg.getFromIPFS(cid).then(claims => {
+                let cred = JSON.parse(claims);
+                let chosen;
+
+                // get the credential we want
+                for (var i = 0; i < cred.length; i++) {
+                    // take the credential hash
+                    if (blake2AsHex(cred[i] == req.docHash)) {
+                        chosen = cred[i];
+                        break;
+                    }
+                }
+
+                if (chosen) {
+                    return res.send({
+                        data: { 
+                            msg: JSON.stringify(chosen)
+                        },
+                        error: false
+                    });
+                } else 
+                    throw new Error ("credential not found.");
+            });
+
+        } catch (e) {
+            return res.send({
+                data: { 
+                    msg: e.toString()
+                },
+                error: true
+            })
+        }
+
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+            error: true
+        })
+    }
+}
+
+// get users credentials and display specific info
+async function listCredentials(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        // get light DID
+        let ldid = (await api.query.samaritan.didRegistry(auth.did)).toHuman();
+        ldid = JSON.parse(util.decryptData(BOLD_TEXT, ldid[0]));
+
+        // get credential endoint
+        let endpoint = ldid.service[0].serviceEndpoint;
+        let uri = util.extractCID(endpoint); 
+
+        (async function () {
+            // get repo from IPFS
+            await storg.getFromIPFS(uri).then(claims => {
+                let creds = JSON.parse(claims);
+                let assets = [];
+
+                for (var i = 0; i < creds.length; i++) {
+                    assets.push({
+                        hash: blake2AsHex(creds[i]),
+                        content: Object.keys(creds[i].claim.contents)
+                    });
+                }
+
+                return res.send({
+                    data: { 
+                        creds: assets
+                    },
+                    error: false
+                });
+            })
+        })();
+
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+            error: true
+        })
+    }
 }
 
 
@@ -1202,6 +1294,15 @@ app.get('/read-data', (req, res) => {
     switch (req.query.arg1) {
         case "--cred":
             fetchCredential(req.query, res);
+            break;
+    }
+})
+
+// fetch data from network for listing 
+app.get('/fetch-list', (req, res) => {
+    switch (req.query.arg) {
+        case "cred":
+            listCredentials(req.query, res);
             break;
     }
 })

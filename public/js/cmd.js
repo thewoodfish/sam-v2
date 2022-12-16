@@ -1,13 +1,12 @@
-
 jQuery(function($, undefined) {
 	var main = $('body').terminal({
-		sam: function(arg1="", arg2="", arg3="", arg4="") {
+		sam: function(arg1="", arg2="", arg3="", arg4="", arg5="") {
 			switch (arg1) {
 				case "help": 
 				case "":
-					this.echo(`samaritan v0.0.5`);
+					this.echo(`samaritanOS v0.1.0`);
 					this.echo(`Usage: sam <command> [arg1] [arg2] [arg3] [argN]`);
-					this.echo(`These are common samaritan commands used in various situations:`);
+					this.echo(`These are common samaritan commands used in various situations:`); 
 					this.echo(`new <name>			creates a new samaritan with a non-unique name`);
 					this.echo(`init <keys>			lets your samaritan take control of the terminal`);
 					this.echo(`find <DID>			confirms if samaritan exists and returns DID document and metadata`);
@@ -22,6 +21,20 @@ jQuery(function($, undefined) {
 					this.echo(`rotate				rotates your samritan keys and presents you with a new mnemonic`);
 					this.echo(`quorum				lists out all the samaritans in your trust quorum`);
 					this.echo(`revoke <DID>        removes a samaritan from your trust quorum`);
+					this.echo(`attr "<key1=value1> <key2=value2> <keyN=valueN>"       add attributes that describes your Samaritan. Absence of arguments displays data`);
+					this.echo(`read <option>           						       The values of <option> are:`);
+					this.echo(`    --cred <credentialHash>                            read contents of a verifiable credential`);
+					this.echo(`enum <option>                                          The values of <option> are:`);
+					this.echo(`    cred                                               lists out all credentials of a Samaritan and their various subjects`);
+					this.echo(`chain --<chain>                                        interacts with blockchains for mission critical tasks.`);
+					this.echo(`These are various chains supported by SamaritanOS and their specific functions:`);
+					this.echo(`The KILT chain: kilt`);
+					this.echo(`    ctype  --title=<title> --attr="<attr1=type1> <attr2=type2> ... <attrN=typeN>"        create credential type schema to recieve credentials in the right forrmat for attestations"`);
+					this.echo(`    claim <ctypeID>                                                                      request verification for your selected attributes`);
+					this.echo(`    attest <credentialHash>                                                              attest a verifiable credential`);
+					this.echo(`    verify <DID> <credentialHash>                                                        verify whether the credential was verified by the specified samaritan`);
+					this.echo(`    revoke <credentialHash>                                                              revoke a verifiable credential. You must be the attester to do this`);
+					
 					break;
 				
 				case "new":
@@ -30,10 +43,13 @@ jQuery(function($, undefined) {
 						this.echo(`fatal: You must provide a name for your samaritan`);
 						this.echo(`usage: sam new <name>`);
 					} else {
-						this.echo(`creating your samaritan...`);
+						if (arg2 == "app") 
+							this.echo("setting up app DID...");
+						else 
+							this.echo(`creating your samaritan...`);
 						this.pause();
 
-						fetch (getURL(`new`, `name=${arg2}`), {
+						fetch (getURL(`new`, `name=${arg2}`, `nonce=${ getNonce() }`), {
 							method: 'get',
 							headers: {
 								'Content-Type': 'application/json'
@@ -48,18 +64,30 @@ jQuery(function($, undefined) {
 										main.echo(`fatal: ${res.data.msg}`);
 									else {
 
-										// set nonce for further communication
-										sessionStorage.setItem("nonce", res.data.nonce);
+										if (!res.data.is_app) {
+											// set nonce for further communication
+											sessionStorage.setItem("nonce", res.data.nonce);
 
-										main.echo("samaritan successfully added to the network");
+											main.echo("samaritan successfully added to the network");
 
-										main.echo(`DID:     ${res.data.did}`);
-										main.echo(`Keys:    ${res.data.seed} ([[b;red;] You have 30 seconds to copy them.])`);
+											main.echo(`DID:     ${res.data.did}`);
+											main.echo(`Keys:    ${res.data.seed} ([[b;red;] You have 30 seconds to copy them.])`);
 
-										main.pause();
-										setTimeout(() => {
-											main.update(-1, "Keys:    ****************************************************************************************************").resume();
-										}, 30000);
+											main.pause();
+											setTimeout(() => {
+												main.update(-1, "Keys:    ****************************************************************************************************").resume();
+											}, 3000);
+										} else {
+											main.echo("app did successfully added to the network");
+
+											main.echo(`DID:     ${res.data.did}`);
+											main.echo(`Keys:    ${res.data.seed} ([[b;red;] You have 30 seconds to copy them.])`);
+
+											main.pause();
+											setTimeout(() => {
+												main.update(-1, "Keys:    ****************************************************************************************************").resume();
+											}, 30000);
+										}
 									}
 
 								});
@@ -144,7 +172,7 @@ jQuery(function($, undefined) {
 												main.echo(`fatal: ${res.data.msg}`);
 											else {
 												main.echo(`DID:             ${arg2}`);
-												main.echo(`DID document:    ${JSON.stringify(res.data.doc)}`);
+												main.echo(`DID document:    ${JSON.stringify(res.data.doc, null, 2)}`);
 												main.echo(`DID doc metadata: `)
 												main.echo(`    version: ${res.data.version}`);
 												main.echo(`    active: ${res.data.active}`);
@@ -497,6 +525,233 @@ jQuery(function($, undefined) {
 
 					break;
 
+				case "attr":
+					if (!inSession()) {
+						main.echo(`fatal: no samaritan initialized. See 'sam help'`);
+					} else {
+						if (!arg2)
+							this.echo(`retrieving attributes...`);
+						else 
+							this.echo(`updating attributes...`);
+						this.pause();
+
+						fetch (getURL(`attr`, `nonce=${ getNonce() }`, `data=${arg2.replaceAll(" ", ";")}`), {
+							method: 'get',
+							headers: {
+								'Content-Type': 'application/json'
+							}
+						})
+						.then(res => {
+							(async function () {
+								await res.json().then(res => {
+									main.resume();
+									
+									if (res.error) 
+										main.echo(`fatal: ${res.data.msg}`);
+									else {
+										if (res.data.type == "set")
+											main.echo(`${res.data.msg}`);
+										else {
+											main.echo(`Saved attributes:`);
+											main.echo(`${res.data.attr}`);
+										}
+									}
+								});
+							})();  
+						})
+					}
+
+				break;
+
+				case "read":
+					if (!inSession()) {
+						main.echo(`fatal: no samaritan initialized. See 'sam help'`);
+					} else {
+						// check argument conformance
+						if (!arg2) {
+							this.echo(`fatal: you must specifiy what to read`);
+							this.echo(`usage: sam read <option>`);
+						} else {
+							switch (arg2) {
+								case "--cred":
+									if (!arg3)
+										this.echo(`fatal: credential hash not specified. See 'sam help'`);
+									else {
+										this.echo(`quering network for data...`);
+										this.pause();
+
+										fetch (getURL(`read-data`, `arg1=${arg2}`, `arg2=${arg3}`, `nonce=${ getNonce() }`), {
+											method: 'get',
+											headers: {
+												'Content-Type': 'application/json'
+											}
+										})
+										.then(res => {
+											(async function () {
+												await res.json().then(res => {
+													main.resume();
+													
+													if (res.error) 
+														main.echo(`fatal: ${res.data.msg}`);
+													else {
+														main.echo(`hash: ${arg3} `);
+														main.echo(`content: ${res.data.msg}`);
+													}
+												});
+											})();  
+										})
+									}
+
+									break;
+							}
+							
+						}
+					}
+
+					break;
+
+				case "enum":
+					if (!inSession()) {
+						main.echo(`fatal: no samaritan initialized. See 'sam help'`);
+					} else {
+						// check argument conformance
+						if (!arg2) {
+							this.echo(`fatal: you must specifiy what to list out`);
+							this.echo(`usage: sam enum <option>`);
+						} else {
+							switch (arg2) {
+								case "cred":
+									this.echo(`quering network for data...`);
+									this.pause();
+
+									fetch (getURL(`fetch-list`, `arg=${arg2}`, `nonce=${ getNonce() }`), {
+										method: 'get',
+										headers: {
+											'Content-Type': 'application/json'
+										}
+									})
+									.then(res => {
+										(async function () {
+											await res.json().then(res => {
+												main.resume();
+												
+												if (res.error) 
+													main.echo(`fatal: ${res.data.msg}`);
+												else {
+													main.echo(`Credential list:`);
+													for (var i = 0; i < res.data.creds.length; i++) {
+														main.echo(`${i + 1}.`);
+														main.echo(` credential hash -> ${res.data.creds[i].hash}`);
+														main.echo(` credential content -> ${res.data.creds[i].content.join(`, `)}`);
+													}
+												}
+											});
+										})();  
+									})
+
+									break;
+								
+								default:
+									this.echo(`option "${arg2} not recognized`);
+							}
+							
+						}
+					}
+
+					break;
+
+				case "chain":
+					if (!inSession()) {
+						main.echo(`fatal: no samaritan initialized. See 'sam help'`);
+					} else {
+						// parse command
+						// parseCommandLine()
+
+						switch (arg3.replace("--", "")) {
+							case "ctype":
+								this.echo(`creating cType...`);
+								this.pause();
+
+								fetch (getURL(`create-ctype`, `nonce=${ getNonce() }`, `chain=${ arg2.replace("--", "")}`, `cmd=${ arg3.replace("--", "") }`,
+									`title=${ arg4.replace("--title=", "") }`, `attr=${ arg5.replace("--attr=", "") }`), {
+									method: 'get',
+									headers: {
+										'Content-Type': 'application/json'
+									}
+								})
+								.then(res => {
+									(async function () {
+										await res.json().then(res => {
+											main.resume();
+											
+											if (res.error) 
+												main.echo(`fatal: ${res.data.msg}`);
+											else {
+												main.echo(`cType ID: ${res.data.id}`);
+												main.echo(`${res.data.msg}`);
+											}
+										});
+									})();  
+								})
+
+							break;
+						
+							case "claim":
+								this.echo(`creating your claim...`);
+								this.pause();
+
+								fetch (getURL(`create-claim`, `nonce=${ getNonce() }`, `chain=${ arg2.replace("--", "")}`, `ctype=${ arg4 }`), {
+									method: 'get',
+									headers: {
+										'Content-Type': 'application/json'
+									}
+								})
+								.then(res => {
+									(async function () {
+										await res.json().then(res => {
+											main.resume();
+											
+											if (res.error) 
+												main.echo(`fatal: ${res.data.msg}`);
+											else {
+												main.echo(`Credential hash: ${res.data.cred_id}`);
+												main.echo(`${res.data.msg}`);
+											}
+										});
+									})();  
+								})
+
+								break;
+
+							case "attest":
+								this.echo(`trying to create attestation...`);
+								this.pause();
+
+								fetch (getURL(`attest`, `nonce=${ getNonce() }`, `chain=${ arg2.replace("--", "")}`, `credHash=${ arg4 }`), {
+									method: 'get',
+									headers: {
+										'Content-Type': 'application/json'
+									}
+								})
+								.then(res => {
+									(async function () {
+										await res.json().then(res => {
+											main.resume();
+											
+											if (res.error) 
+												main.echo(`fatal: ${res.data.msg}`);
+											else {
+												main.echo(`${res.data.msg}`);
+											}
+										});
+									})();  
+								})
+
+								break;
+						}					
+					}
+
+				break;
 
 				default:
 					this.echo(`sam: '${arg1}' is not a samaritan command. See 'sam help'.`);
