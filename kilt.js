@@ -131,6 +131,37 @@ export async function createFullDid() {
 //     }
 //   }
 
+// sample credential
+// [{
+//     "credential": {
+//       "claim": {
+//         "cTypeHash": "0x3291bb126e33b4862d421bfaa1d2f272e6cdfc4f96658988fbcffea8914bd9ac",
+//         "contents": {
+//           "Email": "john.doe@kilt.io"
+//         },
+//         "owner": "did:kilt:4pZGzLSybfMsxB1DcpFNYmnqFv5QihbFb1zuSuuATqjRQv2g"
+//       },
+//       "claimHashes": [
+//         "0x489ee600a06c0e051010cca0c85e63f19e7d84ade945eb3cbeaf6c0aad06f64c",
+//         "0x73d96f37134be64e9bc79e8d178afd4e4145aea1851d9f734347cf29cf7c2f64"
+//       ],
+//       "claimNonceMap": {
+//         "0x4ac8f367789eb2c66c9cb5295c41fbe02d857300d6beac6f83501978b6cbc41c": "b9eb7d7d-797b-4268-abfb-27889f573743",
+//         "0xad3ad967e5f65dd29eed05d8b2136c598562d6c920af75f4f0cf4d9554256723": "5a4eb0c2-de99-44d4-8826-6f76c2f11556"
+//       },
+//       "legitimations": [],
+//       "delegationId": null,
+//       "rootHash": "0xf31d7f63b39969e798566afe2b5e7413b0b919bc27d9560a7914cb2a2869af72",
+//       "claimerSignature": {
+//         "keyId": "did:kilt:4pZGzLSybfMsxB1DcpFNYmnqFv5QihbFb1zuSuuATqjRQv2g#0x29e83869d6440d102eaaac22742a004b35f152e5204c0ac7c5207c8e9b5f9cdb",
+//         "signature": "0x02d7f4e05e6cea26de975aed63bda9cd07ffb2ff2864aa8480c2debeca68760e8666b87646955b127402fa1122e12265bc4dc1f143d1fcbdae6d97a69f3aff87"
+//       }
+//     },
+//     "metadata": {
+//       "label": "Email Credential"
+//     }
+//   }]
+
 // converts attributes to acceptable objects
 function strToCT(str) {
     let obj = {};
@@ -253,4 +284,48 @@ export function createClaim(ctype, attr, did) {
 
     const credential = Kilt.Credential.fromClaim(claim);
     return credential;
+}
+
+export async function getPresentation(
+    credential,
+    mnemonic,
+    selectedAttributes = undefined,
+    challenge = undefined
+) {
+    // get owner did from credential
+    const did = credential.credential.claim.owner;
+    const { authentication, encryption, attestation, delegation } = generateKeypairs(mnemonic);
+
+    let signCallback = useSignCallback(did, authentication);
+    
+    // Create a presentation with only the specified fields revealed, if specified.
+    return Kilt.Credential.createPresentation({
+        credential,
+        signCallback,
+        selectedAttributes,
+        challenge,
+    })
+}
+
+export async function verifyPresentation(presentation, challenge = undefined) {
+    // Verify the presentation with the provided challenge.
+    return await Kilt.Credential.verifyPresentation(presentation, { challenge })
+}
+
+// attestation deposit would be reclaimed
+export async function revokeCredential(credential) {
+    try {
+        // Generate the tx to claim the deposit back.
+        const depositReclaimTx = api.tx.attestation.reclaimDeposit(
+            credential.rootHash
+        );
+    
+        // Submit the revocation tx to the KILT blockchain.
+        await Kilt.Blockchain.signAndSubmitTx(depositReclaimTx, sam);
+
+        return true;
+
+    } catch (e) {
+        return false;
+    }
 }

@@ -20,14 +20,14 @@ jQuery(function($, undefined) {
 					this.echo(`help                informs you about the samaritan terminal`);
 					this.echo(`rotate				rotates your samritan keys and presents you with a new mnemonic`);
 					this.echo(`quorum				lists out all the samaritans in your trust quorum`);
-					this.echo(`revoke <DID>        removes a samaritan from your trust quorum`);
+					this.echo(`remove <DID>         removes a samaritan from your trust quorum`);
 					this.echo(`attr "<key1=value1> <key2=value2> <keyN=valueN>"       add attributes that describes your Samaritan. Absence of arguments displays data`);
-					this.echo(`read <option>           						       The values of <option> are:`);
+					this.echo(`read <option>           						      The values of <option> are:`);
 					this.echo(`    --cred <credentialHash>                            read contents of a verifiable credential`);
 					this.echo(`enum <option>                                          The values of <option> are:`);
 					this.echo(`    cred                                               lists out all credentials of a Samaritan and their various subjects`);
 					this.echo(`chain --<chain>                                        interacts with blockchains for mission critical tasks.`);
-					this.echo(`These are various chains supported by SamaritanOS and their specific functions:`);
+					this.echo(`These are various <chain>s supported by SamaritanOS and their specific functions:`);
 					this.echo(`The KILT chain: kilt`);
 					this.echo(`    ctype  --title=<title> --attr="<attr1=type1> <attr2=type2> ... <attrN=typeN>"        create credential type schema to recieve credentials in the right forrmat for attestations"`);
 					this.echo(`    claim <ctypeID>                                                                      request verification for your selected attributes`);
@@ -454,7 +454,7 @@ jQuery(function($, undefined) {
 
 					break;
 
-				case "revoke":
+				case "remove":
 					if (!inSession()) {
 						main.echo(`fatal: no samaritan initialized. See 'sam help'`)
 					} else {
@@ -748,6 +748,82 @@ jQuery(function($, undefined) {
 								})
 
 								break;
+
+								case "verify":
+									if (!inSession()) {
+										main.echo(`fatal: no samaritan initialized. See 'sam help'`)
+									} else {
+										// check argument conformance
+										if (!arg4 || !arg5) {
+											this.echo(`fatal: you must provide a DID and credential hash`);
+											this.echo(`usage: sam chain --kilt verify <DID>`);
+										} else {
+											// check did format
+											if (!isDID(arg4)) {
+												this.echo(`fatal: invalid DID format`);
+												this.echo(`expected DID format: did:sam:root:<address>`);
+											} else {
+												this.echo(`performaing verification...`);
+												this.pause();
+
+												fetch (getURL(`verify-cred`, `nonce=${ getNonce() }`, `did=${ arg4 }`, `credHash=${ arg5 }`), {
+													method: 'get',
+													headers: {
+														'Content-Type': 'application/json'
+													}
+												})
+												.then(res => {
+													(async function () {
+														await res.json().then(res => {
+															main.resume();
+															
+															if (res.error) 
+																main.echo(`fatal: ${res.data.msg}`);
+															else 
+																main.echo(`${res.data.msg}`);
+														});
+													})();  
+												})
+											}
+										}
+									}
+
+									break;
+
+								case "revoke":
+									if (!inSession()) {
+										main.echo(`fatal: no samaritan initialized. See 'sam help'`)
+									} else {
+										// check argument conformance
+										if (!arg3) {
+											this.echo(`fatal: you must provide a DID and credential hash`);
+											this.echo(`usage: sam chain --kilt verify <DID> <cHash>`);
+										} else {
+											this.echo(`processing...`);
+											this.pause();
+
+											fetch (getURL(`revoke-cred`, `nonce=${ getNonce() }`, `credHash=${ arg4 }`), {
+												method: 'get',
+												headers: {
+													'Content-Type': 'application/json'
+												}
+											})
+											.then(res => {
+												(async function () {
+													await res.json().then(res => {
+														main.resume();
+														
+														if (res.error) 
+															main.echo(`fatal: ${res.data.msg}`);
+														else 
+															main.echo(`${res.data.msg}`);
+													});
+												})();  
+											})
+										}
+									}
+
+									break;
 						}					
 					}
 

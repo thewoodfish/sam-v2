@@ -956,7 +956,7 @@ async function authorKiltCtype(did, req, res) {
     });
 }
 
-async function attestCredential(req, res) {
+async function attestKiltCredential(req, res) {
     const auth = isAuth(req.nonce);
     if (auth.is_auth) {
         try {
@@ -989,13 +989,13 @@ async function attestCredential(req, res) {
                             } 
 
                             if (section.match("samaritan", "i")) {
-                                attestKiltCredential(kf_hash, req, res, cid);
+                                attestKCredential(kf_hash, req, res, cid);
                             } 
                         });
                     }
                 });
             } else 
-                attestKiltCredential(docs[1], req, res, cid);
+                attestKCredential(docs[1], req, res, cid);
 
         } catch (e) {
             return res.send({
@@ -1016,7 +1016,7 @@ async function attestCredential(req, res) {
     }
 }
 
-async function attestKiltCredential(docHash, req, res, uri) {
+async function attestKCredential(docHash, req, res, uri) {
     const auth = isAuth(req.nonce);
     if (auth.is_auth) {
         let doc = JSON.parse(util.decryptData(BOLD_TEXT, docHash));
@@ -1038,15 +1038,32 @@ async function attestKiltCredential(docHash, req, res, uri) {
 
                 if (chosen) {
                     (async function () {
-                        let success = await kilt.createAttestation(doc.fullDid.uri, doc.mnemonic, cred[0]);
+                        let success = await kilt.createAttestation(doc.fullDid.uri, doc.mnemonic, chosen);
 
                         // attest credential
                         if (success) {
-                            return res.send({
-                                data: { 
-                                    msg: "attestation successful."
-                                },
-                                error: false
+                            // save the attester and credential to chain
+                            const transfer = api.tx.samaritan.saveAttestation(auth.did, blake2AsHex(JSON.stringify(chosen)));
+                            const hash = await transfer.signAndSend(/*sam */alice, ({ events = [], status }) => {
+                                if (status.isInBlock) {
+                                    events.forEach(({ event: { data, method, section }, phase }) => {
+                                        // check for errors
+                                        if (section.match("system", "i") && data.toString().indexOf("error") != -1) {
+                                            return res.send({
+                                                data: { msg: "could not attest credential" }, error: true
+                                            }) 
+                                        } 
+
+                                        if (section.match("samaritan", "i")) {
+                                            return res.send({
+                                                data: { 
+                                                    msg: "attestation successful."
+                                                },
+                                                error: false
+                                            });
+                                        } 
+                                    });
+                                }
                             });
                         } else 
                             throw new Error ("attestation failed.");
@@ -1159,6 +1176,164 @@ async function listCredentials(req, res) {
             })
         })();
 
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+            error: true
+        })
+    }
+}
+
+// verify KILT credential
+async function verifyKiltCredential(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        try {
+            // first check that the attestation exists
+            let attesters = (await api.query.samaritan.attestationRegistry(req.credHash)).toHuman();
+            if (!cid) 
+                throw new Error(`credential not attested`);
+
+            // check for the attester
+            let present = false;
+            for (var i = 0; i < attesters.length; i++) {
+                if (attesters[i] == req.did) {
+                    present = true;
+                    break;
+                }
+            }
+
+            if (!present)
+                throw new Error(`credential not attested by ${req.did}`);
+
+            // now get credential CID
+            let cid = (await api.query.samaritan.vcRegistry(req.arg2)).toHuman();
+            if (!cid) throw new Error(`credential not found.`);
+
+            // get credential from IPFS
+            await storg.getFromIPFS(cid).then(claims => {
+                let creds = JSON.parse(claims);
+                let chosen;
+
+                // get the credential we want
+                for (var i = 0; i < creds.length; i++) {
+                    // take the credential hash
+                    if (blake2AsHex(creds[i] == req.docHash)) {
+                        chosen = creds[i];
+                        break;
+                    }
+                }
+
+                if (!chosen) throw new Error(`credential not found.`);
+
+                (async function () {
+                    // get user keys
+                    let list = (await api.query.samaritan.didRegistry(did)).toHuman();
+                    const did_doc = JSON.parse(util.decryptData(BOLD_TEXT, list[0])); 
+
+                    // get kilt presentation
+                    let cp = await kilt.getPresentation(chosen, did_doc.mnemonic);
+                    let isValid = kilt.verifyPresentation(cp);
+
+                    if (!isValid) 
+                        throw new Error(`credential is invalid`);
+
+                    // return validity
+                    return res.send({
+                        data: { 
+                            isValid,
+                            msg: `credential attestation is valid`
+                        },
+                        error: false
+                    })
+                })();
+
+            });
+
+        } catch (e) {
+            return res.send({
+                data: { 
+                    msg: e.toString(),
+                },
+                error: true
+            })
+        }
+    } else {
+        return res.send({
+            data: { 
+                msg: "samaritan not recognized"
+            },
+            error: true
+        })
+    }
+}
+
+// revoke KILT credential
+async function revokeKiltCredential(req, res) {
+    const auth = isAuth(req.nonce);
+    if (auth.is_auth) {
+        try {
+            // first check that the attestation exists
+            let attesters = (await api.query.samaritan.attestationRegistry(req.credHash)).toHuman();
+            if (!cid) 
+                throw new Error(`credential not attested`);
+
+            // check for the attester
+            let present = false;
+            for (var i = 0; i < attesters.length; i++) {
+                if (attesters[i] == auth.did) {
+                    present = true;
+                    break;
+                }
+            }
+
+            if (!present)
+                throw new Error(`credential can only be revoked if attested by you.`);
+
+            // now get credential CID
+            let cid = (await api.query.samaritan.vcRegistry(req.arg2)).toHuman();
+            if (!cid) throw new Error(`credential not found.`);
+
+            // get credential from IPFS
+            await storg.getFromIPFS(cid).then(claims => {
+                let creds = JSON.parse(claims);
+                let chosen;
+
+                // get the credential we want
+                for (var i = 0; i < creds.length; i++) {
+                    // take the credential hash
+                    if (blake2AsHex(creds[i] == req.docHash)) {
+                        chosen = creds[i];
+                        break;
+                    }
+                }
+
+                if (!chosen) throw new Error(`credential not found.`);
+
+                (async function () {
+                    // revoke credential
+                    if (kilt.revokeCredential(chosen)) {
+                        return res.send({
+                            data: { 
+                                msg: `credential successfully revoked`
+                            },
+                            error: false
+                        })
+                    } else
+                        throw new Error("revocation failed.")
+                })();
+            });
+
+        } catch (e) {
+            return res.send({
+                data: { 
+                    msg: e.toString(),
+                },
+                error: true
+            })
+        }
     } else {
         return res.send({
             data: { 
@@ -1286,7 +1461,7 @@ app.get('/create-claim', (req, res) => {
 
 // attest credential
 app.get('/attest', (req, res) => {
-    attestCredential(req.query, res);
+    attestKiltCredential(req.query, res);
 })
 
 // fetch data from network
@@ -1307,6 +1482,15 @@ app.get('/fetch-list', (req, res) => {
     }
 })
 
+// verify credential
+app.get('/verify-cred', (req, res) => {
+    verifyKiltCredential(req.query, res);
+})
+
+// revoke credential
+app.get('/revoke-cred', (req, res) => {
+    revokeKiltCredential(req.query, res);
+})
 
 // listen on port 3000
 app.listen(port, () => console.info(`Listening on port ${port}`));
